@@ -3,8 +3,7 @@
   "builds": [
     {
       "src": "frontend/package.json",
-      "use": "@vercel/next",
-      "config": { "project": "frontend" }
+      "use": "@vercel/next"
     },
     {
       "src": "api/index.py",
@@ -15,10 +14,6 @@
     {
       "source": "/api/(.*)",
       "destination": "/api/index.py"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/frontend"
     }
   ]
 }
