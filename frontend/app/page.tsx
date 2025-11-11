@@ -29,7 +29,7 @@ export default function Home() {
     <main style={{ padding: '40px', fontFamily: 'sans-serif' }}>
       <h1>Meu Perfil Gamer</h1>
       <p>Status da Conexão com o Backend:</p>
-      <div style={{ padding: '20px', backgroundColor: '#f0f0f0', border: '1px solid #ccc' }}>
+      <div style={{ padding: '20px', backgroundColor: '#f0f0f0', border: '1px solid #ccc', color: 'black' }}>
         <strong>{mensagem}</strong>
       </div>
     </main>
