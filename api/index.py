@@ -1,27 +1,62 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import requests
+import os
 
-# Cria a aplicação
+# Pega a NOVA chave da API que salvamos no Vercel
+GIANTBOMB_API_KEY = os.environ.get('GIANTBOMB_API_KEY')
+
 app = FastAPI()
 
-# Configuração de CORS (Importante para conectar Front e Back)
-# Permite que seu frontend (em um domínio diferente) chame esta API.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Permite todas as origens (mude isso em produção)
+    allow_origins=["*"], 
     allow_credentials=True,
-    allow_methods=["*"], # Permite todos os métodos (GET, POST, etc.)
-    allow_headers=["*"], # Permite todos os cabeçalhos
+    allow_methods=["*"], 
+    allow_headers=["*"], 
 )
 
-# Este é o seu primeiro "Endpoint"
-# Quando o site acessar "URL_DO_SITE/api/ola"
-# esta função vai rodar e retornar a mensagem.
+# ---- Endpoint antigo (ainda funciona) ----
 @app.get("/api/ola")
 def get_hello():
     return {"mensagem": "Olá, direto do Backend Python!"}
 
-# Endpoint raiz (opcional, bom para testar)
+# ---- Endpoint raiz (ainda funciona) ----
 @app.get("/api")
 def get_root():
     return {"serviço": "API Perfil Gamer", "status": "online"}
+
+# ---- NOSSO ENDPOINT DE BUSCA (ATUALIZADO) ----
+@app.get("/api/search")
+def search_games(q: str | None = None):
+    if not q:
+        return {"error": "Nenhum termo de busca fornecido"}
+    
+    # URL da API Giant Bomb
+    url = "https://www.giantbomb.com/api/search/"
+    
+    # Parâmetros necessários para o Giant Bomb
+    params = {
+        'api_key': GIANTBOMB_API_KEY,
+        'format': 'json', # Queremos a resposta em JSON
+        'query': q,
+        'resources': 'game', # Queremos buscar apenas "jogos"
+        'limit': 10 # Limitar a 10 resultados
+    }
+    
+    # O Giant Bomb exige um User-Agent.
+    headers = {
+        'User-Agent': 'MeuPerfilGamerApp'
+    }
+    
+    try:
+        response = requests.get(url, params=params, headers=headers)
+        response.raise_for_status() 
+        
+        data = response.json()
+        
+        # O Giant Bomb retorna os jogos dentro de "results"
+        return data['results']
+
+    except requests.exceptions.RequestException as e:
+        return {"error": f"Erro ao chamar a API externa: {e}"}
