@@ -1,4 +1,4 @@
-import './globals.css'; // O Next.js cria isso - pode deixar
+import './globals.css'; // Importa o Tailwind
 
 export const metadata = {
   title: 'Gaming Point',
@@ -12,7 +12,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-br">
-      <body style={{ margin: 0, backgroundColor: '#121212' }}>
+      {/* A MUDANÇA ESTÁ AQUI: 
+        Removemos o 'style={{...}}'
+        e aplicamos as classes do Tailwind 'bg-gray-900' e 'text-white'
+        diretamente no body.
+      */}
+      <body className="bg-gray-900 text-white">
         {children}
       </body>
     </html>
