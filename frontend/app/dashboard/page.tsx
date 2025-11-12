@@ -56,25 +56,19 @@ export default function Home() {
   const [averageScore, setAverageScore] = useState<number | null>(null);
 
 
-  // --- !!! useEffect PRINCIPAL (ATUALIZADO) !!! ---
+  // --- useEffect PRINCIPAL (ATUALIZADO) ---
   useEffect(() => {
-    // A chamada "ola" é independente, pode rodar
     fetch('/api/ola').then(res => res.json()).then(data => setMensagem(data.mensagem));
     
-    // Vamos criar uma função "async" para poder esperar (await)
-    // as chamadas terminarem na ordem correta.
     const initializeProfile = async () => {
       try {
-        // 1. Primeiro, testa o banco de dados
         setDbStatus('Testando conexão...');
         const dbResponse = await fetch('/api/test-db');
         const dbData = await dbResponse.json();
         
         if (dbData.database_status) {
-          // 1a. Deu certo!
           setDbStatus(dbData.database_status);
           
-          // 2. AGORA, e somente agora, buscamos as reviews do perfil
           const reviewsResponse = await fetch('/api/my-reviews');
           const reviewsData = await reviewsResponse.json();
           
@@ -85,7 +79,6 @@ export default function Home() {
           }
           
         } else {
-          // 1b. O teste do banco falhou
           setDbStatus(dbData.error || 'Falha ao conectar ao banco');
         }
         
@@ -95,7 +88,6 @@ export default function Home() {
       }
     };
     
-    // Executa a função de inicialização
     initializeProfile();
     
   }, []); // Roda uma vez quando a página carrega
@@ -272,7 +264,8 @@ export default function Home() {
         <section>
           <h2>Buscar Jogo</h2>
           <div style={{ display: 'flex' }}>
-            <input type="text" value={query} onChange={(e) => setQuery(e.g.value)} placeholder="Digite o nome de um jogo..." style={{ fontSize: '16px', padding: '10px', color: 'black', width: '300px' }} />
+            {/* --- !!! AQUI ESTÁ A CORREÇÃO !!! --- */}
+            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Digite o nome de um jogo..." style={{ fontSize: '16px', padding: '10px', color: 'black', width: '300px' }} />
             <button onClick={handleSearch} style={{ fontSize: '16px', padding: '10px', marginLeft: '10px' }}>
               {isSearchLoading ? 'Buscando...' : 'Buscar'}
             </button>
