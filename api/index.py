@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from sqlalchemy.exc import OperationalError
 from pydantic import BaseModel 
 
-# --- CONFIGURAÇÃO "PREGUIÇOSA" (LAZY) ---
+# --- CONFIGURAÇÃO "PREGUIOSA" (LAZY) ---
 engine = None
 SessionLocal = None
 Base = declarative_base()
@@ -26,14 +26,11 @@ class Review(Base):
     id = Column(Integer, primary_key=True, index=True)
     game_id = Column(Integer, nullable=False, index=True) 
     game_name = Column(String) 
-    
-    # Nossas 5 categorias corretas
     jogabilidade = Column(Float)
     graficos = Column(Float)
     narrativa = Column(Float)
     audio = Column(Float)
     desempenho = Column(Float)
-    
     nota_geral = Column(Float)
     owner_id = Column(Integer, ForeignKey("users.id"))
 
@@ -71,12 +68,10 @@ app.add_middleware(
 def get_hello():
     return {"mensagem": "Olá, direto do Backend Python!"}
 
-# --- !!! NOSSO NOVO ENDPOINT DE RESET !!! ---
 @app.get("/api/DANGEROUS-RESET-DB")
-def dangerous_reset_db(db: Session = Depends(get_db)): # Pede o DB para garantir que o engine existe
+def dangerous_reset_db(db: Session = Depends(get_db)):
     try:
         global engine
-        # Apaga TODAS as tabelas
         Base.metadata.drop_all(bind=engine)
         return {"message": "Todas as tabelas foram apagadas! Clique em 'Criar Tabelas' agora."}
     except Exception as e:
@@ -86,7 +81,6 @@ def dangerous_reset_db(db: Session = Depends(get_db)): # Pede o DB para garantir
 def create_tables(db: Session = Depends(get_db)):
     try:
         global engine
-        # Cria as tabelas (agora com o schema correto)
         Base.metadata.create_all(bind=engine)
         return {"message": "Tabelas criadas com sucesso (ou já existiam)!"}
     except Exception as e:
@@ -166,6 +160,24 @@ def post_review(review_input: ReviewInput, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         return {"error": f"Erro ao salvar review: {e}"}
+
+# --- !!! NOSSO NOVO ENDPOINT DE BUSCAR REVIEW !!! ---
+@app.get("/api/review")
+def get_review(game_id: int, owner_id: int, db: Session = Depends(get_db)):
+    try:
+        review = db.query(Review).filter(
+            Review.game_id == game_id,
+            Review.owner_id == owner_id
+        ).first()
+        
+        if review:
+            return review # Retorna o objeto da review
+        else:
+            return {"error": "Review não encontrada"}
+            
+    except Exception as e:
+        return {"error": f"Erro ao buscar review: {e}"}
+
 
 # --- Endpoints de Jogo ---
 def get_api_key():
