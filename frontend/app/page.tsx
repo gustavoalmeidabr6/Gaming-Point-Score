@@ -15,7 +15,7 @@ type GameDetails = {
 };
 
 export default function Home() {
-  // --- Estados Antigos (Sem Mudanças) ---
+  // --- Estados Antigos ---
   const [mensagem, setMensagem] = useState('Carregando...');
   const [query, setQuery] = useState(''); 
   const [results, setResults] = useState<GameSearchResult[]>([]);
@@ -23,29 +23,41 @@ export default function Home() {
   const [selectedGame, setSelectedGame] = useState<GameDetails | null>(null);
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
 
-  // --- NOVOS ESTADOS DO BANCO ---
+  // --- Estados do Banco (ATUALIZADOS) ---
   const [dbStatus, setDbStatus] = useState('Testando conexão com o banco...');
+  const [tableStatus, setTableStatus] = useState(''); // NOVO
   const [userStatus, setUserStatus] = useState('');
 
   // --- useEffect para "Olá" e TESTE DE BANCO ---
   useEffect(() => {
-    // Teste 1: /api/ola
     fetch('/api/ola') 
       .then(response => response.json())
       .then(data => setMensagem(data.mensagem))
       .catch(error => console.error('Erro ao buscar /api/ola:', error));
 
-    // Teste 2: /api/test-db
     fetch('/api/test-db')
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+           // Se a resposta não for OK (ex: 500), lemos como texto
+           return response.text().then(text => {
+             throw new Error(`Falha na API: ${text}`);
+           });
+        }
+        return response.json(); // Se for OK, lemos como JSON
+      })
       .then(data => {
         if (data.database_status) {
           setDbStatus(data.database_status);
         } else {
+          // Agora podemos mostrar o erro JSON que o backend enviou
           setDbStatus(`Erro no banco: ${data.error}`);
         }
       })
-      .catch(error => setDbStatus(`Falha grave ao testar o banco: ${error}`));
+      .catch(error => {
+          // Este é o "catch" que pegou seu erro JSON.
+          console.error("Erro no fetch de /api/test-db:", error);
+          setDbStatus(`Falha grave ao testar o banco: ${error.message}`);
+      });
 
   }, []); // Roda uma vez quando a página carrega
 
@@ -84,13 +96,28 @@ export default function Home() {
     setSelectedGame(null);
   };
   
-  // --- !!! NOVA FUNÇÃO: CRIAR USUÁRIO DE TESTE !!! ---
+  // --- !!! NOVA FUNÇÃO: CRIAR TABELAS !!! ---
+  const handleCreateTables = async () => {
+    setTableStatus('Criando tabelas...');
+    try {
+      const response = await fetch('/api/create-tables');
+      const data = await response.json();
+      if (data.message) {
+        setTableStatus(data.message);
+      } else {
+        setTableStatus(`Erro ao criar tabelas: ${data.error}`);
+      }
+    } catch (error) {
+      setTableStatus(`Falha grave ao criar tabelas: ${error}`);
+    }
+  };
+
+  // --- ATUALIZADO: Criar Usuário ---
   const handleCreateUser = async () => {
     setUserStatus('Criando usuário...');
     try {
       const response = await fetch('/api/create-user', { method: 'POST' });
       const data = await response.json();
-      
       if (data.message) {
         setUserStatus(`${data.message} (ID: ${data.user_id})`);
       } else {
@@ -112,12 +139,18 @@ export default function Home() {
         <strong>Status Banco: {dbStatus}</strong>
       </div>
 
-      {/* --- SEÇÃO DE TESTE DO BANCO --- */}
-      <div style={{ marginBottom: '30px' }}>
-        <button onClick={handleCreateUser} style={{ fontSize: '16px', padding: '10px' }}>
-          Criar Usuário de Teste
+      {/* --- SEÇÃO DE TESTE DO BANCO (ATUALIZADA) --- */}
+      <div style={{ marginBottom: '30px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <button onClick={handleCreateTables} style={{ fontSize: '16px', padding: '10px' }}>
+          1. Criar Tabelas no Banco
         </button>
-        {userStatus && <p style={{ color: 'white' }}>{userStatus}</p>}
+        {tableStatus && <p style={{ color: 'white', margin: '0' }}>{tableStatus}</p>}
+      </div>
+      <div style={{ marginBottom: '30px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <button onClick={handleCreateUser} style={{ fontSize: '16px', padding: '10px' }}>
+          2. Criar Usuário de Teste
+        </button>
+        {userStatus && <p style={{ color: 'white', margin: '0' }}>{userStatus}</p>}
       </div>
       
       <hr style={{ margin: '30px 0' }} />
@@ -134,7 +167,6 @@ export default function Home() {
               {isSearchLoading ? 'Buscando...' : 'Buscar'}
             </button>
           </div>
-
           <div style={{ marginTop: '30px' }}>
             {results.map((game) => (
               <div key={game.id} onClick={() => handleGameClick(game.id)} style={{ display: 'flex', alignItems: 'center', marginBottom: '15px', padding: '10px', backgroundColor: '#333', cursor: 'pointer' }}>
@@ -149,7 +181,7 @@ export default function Home() {
       {/* Carregando Detalhes */}
       {isDetailsLoading && <p style={{ color: 'white' }}>Carregando detalhes...</p>}
 
-      {/* --- SEÇÃO 2: TELA DE DETALHES --- */}
+      {/* --- SEÇÃO 2: TELA DE DETALES --- */}
       {selectedGame && !isDetailsLoading && (
         <section>
           <button onClick={handleBackToSearch} style={{ fontSize: '16px', padding: '10px', marginBottom: '20px' }}>
