@@ -46,6 +46,11 @@ export default function Home() {
 
   const [review, setReview] = useState<ReviewForm>(defaultReviewState);
   const [reviewStatus, setReviewStatus] = useState(''); 
+  
+  // --- !!! NOVO ESTADO PARA A MÉDIA !!! ---
+  // Usamos 'null' para saber quando nenhuma nota foi calculada/carregada
+  const [averageScore, setAverageScore] = useState<number | null>(null);
+
 
   // --- useEffect para Status ---
   useEffect(() => {
@@ -53,26 +58,25 @@ export default function Home() {
     fetch('/api/test-db').then(res => res.json()).then(data => setDbStatus(data.database_status || data.error));
   }, []);
 
-  // --- !!! NOVO useEffect: Carrega a Review quando um Jogo é Selecionado !!! ---
+  // --- useEffect: Carrega a Review ---
   useEffect(() => {
-    // Se nenhum jogo está selecionado, não faça nada
     if (!selectedGame) {
       return;
     }
     
-    // Função async para buscar a review
     const fetchReview = async () => {
       try {
-        // Busca pela review do usuário 1 (hardcoded)
         const res = await fetch(`/api/review?game_id=${selectedGame.id}&owner_id=1`);
         const data = await res.json();
         
         if (data.error) {
-          // Nenhuma review encontrada, reseta o formulário
+          // Nenhuma review encontrada
           setReview(defaultReviewState);
+          // Calcula a média inicial (que será 5.0)
+          setAverageScore((Object.values(defaultReviewState).reduce((a, b) => a + b, 0) / 5));
           setReviewStatus('Seja o primeiro a avaliar!');
         } else {
-          // Review encontrada! Preenche o formulário
+          // Review encontrada!
           setReview({
             jogabilidade: data.jogabilidade,
             graficos: data.graficos,
@@ -80,6 +84,8 @@ export default function Home() {
             audio: data.audio,
             desempenho: data.desempenho,
           });
+          // --- !!! AQUI: Salva a nota geral carregada !!! ---
+          setAverageScore(data.nota_geral);
           setReviewStatus('Review carregada do seu perfil.');
         }
       } catch (err) {
@@ -88,10 +94,9 @@ export default function Home() {
       }
     };
     
-    // Chama a função
     fetchReview();
     
-  }, [selectedGame]); // Este array faz o hook rodar toda vez que 'selectedGame' muda
+  }, [selectedGame]); 
 
 
   // --- Funções de Teste do Banco ---
@@ -124,32 +129,38 @@ export default function Home() {
   const handleGameClick = async (gameId: number) => {
     setIsDetailsLoading(true);
     setResults([]);
-    // Limpa o status e o formulário *antes* de carregar o novo jogo
     setReviewStatus('');
     setReview(defaultReviewState); 
+    setAverageScore(null); // Limpa a média antiga
     
     const res = await fetch(`/api/game/${gameId}`);
     const data = await res.json();
-    
-    // Isso vai disparar o useEffect lá em cima
     if (data && data.name) setSelectedGame(data);
-    
     setIsDetailsLoading(false);
   };
 
   const handleBackToSearch = () => {
     setSelectedGame(null);
-    setReview(defaultReviewState); // Reseta o formulário
+    setReview(defaultReviewState); 
     setReviewStatus('');
+    setAverageScore(null); // Limpa a média
   };
   
   // --- Funções de Review ---
   const handleReviewChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setReview(prev => ({
-      ...prev,
+    
+    // Atualiza o estado da 'review'
+    const updatedReview = {
+      ...review,
       [name]: Number(value),
-    }));
+    };
+    setReview(updatedReview);
+    
+    // --- !!! AQUI: Calcula e atualiza a média em tempo real !!! ---
+    const scores = Object.values(updatedReview);
+    const newAverage = scores.reduce((a, b) => a + b, 0) / scores.length;
+    setAverageScore(newAverage);
   };
 
   const handleSubmitReview = async () => {
@@ -242,7 +253,18 @@ export default function Home() {
 
           {/* --- Formulário de Review --- */}
           <div style={{ marginTop: '30px', padding: '20px', backgroundColor: '#222', maxWidth: '500px' }}>
-            <h3 style={{ color: 'white' }}>Meu Review</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ color: 'white', margin: 0 }}>Meu Review</h3>
+              {/* --- !!! AQUI: A NOTA MÉDIA !!! --- */}
+              {averageScore !== null && (
+                <h2 style={{ color: 'lime', margin: 0 }}>
+                  Média: {averageScore.toFixed(1)}
+                </h2>
+              )}
+            </div>
+            
+            <hr style={{ margin: '15px 0', borderColor: '#444' }} />
+
             {(Object.keys(review) as Array<keyof ReviewForm>).map((key) => (
               <div key={key} style={{ marginBottom: '15px' }}>
                 <label style={{ color: 'white', textTransform: 'capitalize', display: 'block', marginBottom: '5px' }}>
@@ -263,7 +285,6 @@ export default function Home() {
             <button onClick={handleSubmitReview} style={{ fontSize: '16px', padding: '10px 20px', marginTop: '10px' }}>
               Salvar Review
             </button>
-            {/* O status agora pode ter cores diferentes */}
             <span style={{ color: reviewStatus.includes('Erro') ? 'red' : 'lime', marginLeft: '15px' }}>
               {reviewStatus}
             </span>
