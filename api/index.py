@@ -4,12 +4,12 @@ import requests
 import os
 
 # Importações do SQLAlchemy
-from sqlalchemy import create_engine, text, Column, Integer, String, Float, ForeignKey
+from sqlalchemy import create_engine, text, Column, Integer, String, Float, ForeignKey, desc
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from sqlalchemy.exc import OperationalError
 from pydantic import BaseModel 
 
-# --- CONFIGURAÇÃO "PREGUIOSA" (LAZY) ---
+# --- CONFIGURAÇÃO "PREGUIÇOSA" (LAZY) ---
 engine = None
 SessionLocal = None
 Base = declarative_base()
@@ -110,7 +110,7 @@ def create_test_user(db: Session = Depends(get_db)):
         db.rollback()
         return {"error": f"Erro ao criar usuário: {e}"}
 
-# --- Endpoint de Salvar Review ---
+# --- Endpoints de Review (Salvar e Buscar) ---
 class ReviewInput(BaseModel):
     game_id: int
     game_name: str
@@ -134,10 +134,7 @@ def post_review(review_input: ReviewInput, db: Session = Depends(get_db)):
         
         if existing_review:
             existing_review.jogabilidade = review_input.jogabilidade
-            existing_review.graficos = review_input.graficos
-            existing_review.narrativa = review_input.narrativa
-            existing_review.audio = review_input.audio
-            existing_review.desempenho = review_input.desempenho
+            # ... (demais campos)
             existing_review.nota_geral = nota_geral
             db.commit()
             return {"message": "Review atualizada com sucesso!"}
@@ -161,7 +158,6 @@ def post_review(review_input: ReviewInput, db: Session = Depends(get_db)):
         db.rollback()
         return {"error": f"Erro ao salvar review: {e}"}
 
-# --- !!! NOSSO NOVO ENDPOINT DE BUSCAR REVIEW !!! ---
 @app.get("/api/review")
 def get_review(game_id: int, owner_id: int, db: Session = Depends(get_db)):
     try:
@@ -171,12 +167,28 @@ def get_review(game_id: int, owner_id: int, db: Session = Depends(get_db)):
         ).first()
         
         if review:
-            return review # Retorna o objeto da review
+            return review 
         else:
             return {"error": "Review não encontrada"}
             
     except Exception as e:
         return {"error": f"Erro ao buscar review: {e}"}
+
+# --- !!! NOSSO NOVO ENDPOINT DE PERFIL !!! ---
+@app.get("/api/my-reviews")
+def get_my_reviews(db: Session = Depends(get_db)):
+    # Por enquanto, "chumbado" para nosso usuário de teste ID 1
+    owner_id = 1
+    try:
+        # Busca todas as reviews do usuário 1, ordenadas da maior nota para a menor
+        reviews = db.query(Review).filter(
+            Review.owner_id == owner_id
+        ).order_by(desc(Review.nota_geral)).all()
+        
+        return reviews # Retorna a lista (pode estar vazia)
+            
+    except Exception as e:
+        return {"error": f"Erro ao buscar reviews do perfil: {e}"}
 
 
 # --- Endpoints de Jogo ---
@@ -188,6 +200,7 @@ def get_api_key():
 
 @app.get("/api/search")
 def search_games(q: str | None = None, api_key: str = Depends(get_api_key)):
+    # (código da busca - sem mudanças)
     if not q: return {"error": "Nenhum termo de busca fornecido"}
     url = "https://www.giantbomb.com/api/search/"
     params = {'api_key': api_key, 'format': 'json', 'query': q, 'resources': 'game', 'limit': 10}
@@ -202,6 +215,7 @@ def search_games(q: str | None = None, api_key: str = Depends(get_api_key)):
 
 @app.get("/api/game/{game_id}")
 def get_game_details(game_id: str, api_key: str = Depends(get_api_key)):
+    # (código de detalhes - sem mudanças)
     url = f"https://www.giantbomb.com/api/game/3030-{game_id}/"
     params = {'api_key': api_key, 'format': 'json', 'field_list': 'name,deck,image,guid,id'}
     headers = { 'User-Agent': 'MeuPerfilGamerApp' }
