@@ -1,3 +1,40 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* Adicione este código ao final do seu globals.css */
+
+/* Estilo base para os balões de diálogo */
+.balloon {
+  position: absolute;
+  background-color: #2563eb; /* bg-blue-600 */
+  color: white;
+  padding: 1rem; /* p-4 */
+  border-radius: 0.5rem; /* rounded-lg */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  width: 200px;
+  opacity: 0.9; /* Um pouco transparente para ver a imagem */
+}
+
+/* A "ponta" do balão (apontando para baixo) */
+.balloon-bottom::after {
+  content: "";
+  position: absolute;
+  bottom: -15px; /* Posiciona a ponta para baixo */
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 15px;
+  border-style: solid;
+  border-color: #2563eb transparent transparent transparent; /* Borda de cima com cor */
+}
+
+/* A "ponta" do balão (apontando para cima) */
+.balloon-top::after {
+  content: "";
+  position: absolute;
+  top: -15px; /* Posiciona a ponta para cima */
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 15px;
+  border-style: solid;
+  border-color: transparent transparent #2563eb transparent; /* Borda de baixo com cor */
+}
