@@ -9,15 +9,11 @@ from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from sqlalchemy.exc import OperationalError
 
 # --- CONFIGURAÇÃO "PREGUIÇOSA" (LAZY) ---
-
-# Deixamos as variáveis globais como 'None'
-# Elas só serão inicializadas na primeira vez que um endpoint for chamado
 engine = None
 SessionLocal = None
 Base = declarative_base()
 
 # --- DEFINIÇÃO DAS TABELAS (Modelos) ---
-# (Isso pode ser definido globalmente sem problemas)
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
@@ -38,28 +34,32 @@ class Review(Base):
 
 
 # --- FUNÇÃO DE DEPENDÊNCIA (A "MÁGICA") ---
-# Isso vai inicializar o banco e dar uma sessão para CADA endpoint que pedir
 def get_db():
     global engine, SessionLocal
     
     try:
-        # Só inicializa na primeira vez
         if engine is None:
-            DATABASE_URL = os.environ.get('POSTGRES_URL')
-            if not DATABASE_URL:
-                raise ValueError("POSTGRES_URL não foi encontrada no ambiente.")
+            # --- !!! AQUI ESTÁ A MUDANÇA !!! ---
+            # Trocamos 'POSTGRES_URL' por 'POSTGRES_URL_NON_POOLING'
+            DATABASE_URL = os.environ.get('POSTGRES_URL_NON_POOLING')
             
-            engine = create_engine(DATABASE_URL, connect_args={"sslmode": "require"})
+            if not DATABASE_URL:
+                raise ValueError("POSTGRES_URL_NON_POOLING não foi encontrada no ambiente.")
+            
+            # Adiciona 'postgresql' em vez de 'postgres' para compatibilidade com SQLAlchemy
+            if DATABASE_URL.startswith("postgres://"):
+                DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+                
+            engine = create_engine(DATABASE_URL) # Não precisamos mais do connect_args
             SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-            print("Conexão com o banco inicializada.")
+            print("Conexão com o banco (Não-Agrupada) inicializada.")
 
-        # Abre uma nova sessão
         db = SessionLocal()
-        yield db # Entrega a sessão para o endpoint
+        yield db
     
     finally:
-        if db:
-            db.close() # Fecha a sessão quando o endpoint termina
+        if 'db' in locals() and db:
+            db.close()
 
 # --- INÍCIO DA APLICAÇÃO FASTAPI ---
 app = FastAPI()
@@ -81,20 +81,17 @@ def get_hello():
 def get_root():
     return {"serviço": "API Perfil Gamer", "status": "online"}
 
-# --- NOVO: Criar Tabelas ---
 @app.get("/api/create-tables")
-def create_tables(db: Session = Depends(get_db)): # Pede a sessão do banco
+def create_tables(db: Session = Depends(get_db)):
     try:
         global engine
-        # O Base.metadata precisa do 'engine' que foi criado no get_db
         Base.metadata.create_all(bind=engine)
         return {"message": "Tabelas criadas com sucesso (ou já existiam)!"}
     except Exception as e:
         return {"error": f"Erro ao criar tabelas: {e}"}
 
-# --- ATUALIZADO: Teste do Banco ---
 @app.get("/api/test-db")
-def test_db(db: Session = Depends(get_db)): # Pede a sessão do banco
+def test_db(db: Session = Depends(get_db)):
     try:
         result = db.execute(text("SELECT 'Conexão com o banco de dados bem-sucedida!'"))
         message = result.fetchone()[0]
@@ -102,9 +99,8 @@ def test_db(db: Session = Depends(get_db)): # Pede a sessão do banco
     except Exception as e:
         return {"error": f"Falha ao conectar ao banco: {e}"}
 
-# --- ATUALIZADO: Criar Usuário ---
 @app.post("/api/create-user")
-def create_test_user(db: Session = Depends(get_db)): # Pede a sessão do banco
+def create_test_user(db: Session = Depends(get_db)):
     try:
         existing_user = db.query(User).filter(User.username == "usuarioteste").first()
         if existing_user:
@@ -120,8 +116,7 @@ def create_test_user(db: Session = Depends(get_db)): # Pede a sessão do banco
         db.rollback()
         return {"error": f"Erro ao criar usuário: {e}"}
 
-# --- Endpoints de Jogo (Sem Mudanças de Lógica) ---
-# Apenas adicionamos a checagem da chave da API aqui
+# --- Endpoints de Jogo ---
 def get_api_key():
     GIANTBOMB_API_KEY = os.environ.get('GIANTBOMB_API_KEY')
     if not GIANTBOMB_API_KEY:
