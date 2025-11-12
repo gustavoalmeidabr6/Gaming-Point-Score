@@ -7,7 +7,7 @@ import os
 from sqlalchemy import create_engine, text, Column, Integer, String, Float, ForeignKey
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from sqlalchemy.exc import OperationalError
-from pydantic import BaseModel # Para receber os dados da nota
+from pydantic import BaseModel 
 
 # --- CONFIGURAÇÃO "PREGUIÇOSA" (LAZY) ---
 engine = None
@@ -21,25 +21,21 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     username = Column(String, unique=True, index=True, nullable=False)
 
-# --- !!! MODELO REVIEW ATUALIZADO !!! ---
 class Review(Base):
     __tablename__ = "reviews"
     id = Column(Integer, primary_key=True, index=True)
-    game_id = Column(Integer, nullable=False, index=True) # ID do Giant Bomb
+    game_id = Column(Integer, nullable=False, index=True) 
     game_name = Column(String) 
     
-    # Nossas 5 categorias
+    # Nossas 5 categorias corretas
     jogabilidade = Column(Float)
     graficos = Column(Float)
     narrativa = Column(Float)
     audio = Column(Float)
     desempenho = Column(Float)
     
-    # A média
     nota_geral = Column(Float)
-    
     owner_id = Column(Integer, ForeignKey("users.id"))
-
 
 # --- FUNÇÃO DE DEPENDÊNCIA (get_db) ---
 def get_db():
@@ -75,10 +71,22 @@ app.add_middleware(
 def get_hello():
     return {"mensagem": "Olá, direto do Backend Python!"}
 
+# --- !!! NOSSO NOVO ENDPOINT DE RESET !!! ---
+@app.get("/api/DANGEROUS-RESET-DB")
+def dangerous_reset_db(db: Session = Depends(get_db)): # Pede o DB para garantir que o engine existe
+    try:
+        global engine
+        # Apaga TODAS as tabelas
+        Base.metadata.drop_all(bind=engine)
+        return {"message": "Todas as tabelas foram apagadas! Clique em 'Criar Tabelas' agora."}
+    except Exception as e:
+        return {"error": f"Erro ao apagar tabelas: {e}"}
+
 @app.get("/api/create-tables")
 def create_tables(db: Session = Depends(get_db)):
     try:
         global engine
+        # Cria as tabelas (agora com o schema correto)
         Base.metadata.create_all(bind=engine)
         return {"message": "Tabelas criadas com sucesso (ou já existiam)!"}
     except Exception as e:
@@ -108,9 +116,7 @@ def create_test_user(db: Session = Depends(get_db)):
         db.rollback()
         return {"error": f"Erro ao criar usuário: {e}"}
 
-# --- !!! NOSSO NOVO ENDPOINT DE SALVAR REVIEW !!! ---
-
-# Modelo Pydantic para validar os dados que chegam do frontend
+# --- Endpoint de Salvar Review ---
 class ReviewInput(BaseModel):
     game_id: int
     game_name: str
@@ -119,23 +125,20 @@ class ReviewInput(BaseModel):
     narrativa: float
     audio: float
     desempenho: float
-    owner_id: int # Vamos "chumbar" o ID 1 por enquanto
+    owner_id: int
 
 @app.post("/api/review")
 def post_review(review_input: ReviewInput, db: Session = Depends(get_db)):
     try:
-        # Calcula a média
         notas = [review_input.jogabilidade, review_input.graficos, review_input.narrativa, review_input.audio, review_input.desempenho]
         nota_geral = sum(notas) / len(notas)
         
-        # Verifica se já existe uma review para este jogo e este usuário
         existing_review = db.query(Review).filter(
             Review.game_id == review_input.game_id,
             Review.owner_id == review_input.owner_id
         ).first()
         
         if existing_review:
-            # Se existe, ATUALIZA (Update)
             existing_review.jogabilidade = review_input.jogabilidade
             existing_review.graficos = review_input.graficos
             existing_review.narrativa = review_input.narrativa
@@ -145,7 +148,6 @@ def post_review(review_input: ReviewInput, db: Session = Depends(get_db)):
             db.commit()
             return {"message": "Review atualizada com sucesso!"}
         else:
-            # Se não existe, CRIA (Create)
             new_review = Review(
                 game_id = review_input.game_id,
                 game_name = review_input.game_name,
@@ -164,7 +166,6 @@ def post_review(review_input: ReviewInput, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         return {"error": f"Erro ao salvar review: {e}"}
-
 
 # --- Endpoints de Jogo ---
 def get_api_key():
@@ -190,7 +191,7 @@ def search_games(q: str | None = None, api_key: str = Depends(get_api_key)):
 @app.get("/api/game/{game_id}")
 def get_game_details(game_id: str, api_key: str = Depends(get_api_key)):
     url = f"https://www.giantbomb.com/api/game/3030-{game_id}/"
-    params = {'api_key': api_key, 'format': 'json', 'field_list': 'name,deck,image,guid,id'} # Pedimos o ID
+    params = {'api_key': api_key, 'format': 'json', 'field_list': 'name,deck,image,guid,id'}
     headers = { 'User-Agent': 'MeuPerfilGamerApp' }
     try:
         response = requests.get(url, params=params, headers=headers)
