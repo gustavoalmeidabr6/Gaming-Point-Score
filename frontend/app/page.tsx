@@ -66,7 +66,8 @@ export default function WelcomePage() {
               fontWeight: 'bold',
               borderRadius: '5px'
             }}
-          S>
+          > 
+            {/* O "S>" que estava aqui foi REMOVIDO */}
             Começar (Ir para o App)
           </a>
         </div>
