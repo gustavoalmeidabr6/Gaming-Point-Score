@@ -21,12 +21,20 @@ type ReviewForm = {
   audio: number;
   desempenho: number;
 };
+// Estado inicial para resetar o formulário
+const defaultReviewState = {
+  jogabilidade: 5,
+  graficos: 5,
+  narrativa: 5,
+  audio: 5,
+  desempenho: 5,
+};
 
 export default function Home() {
   // --- Estados ---
   const [mensagem, setMensagem] = useState('Carregando...');
   const [dbStatus, setDbStatus] = useState('');
-  const [resetStatus, setResetStatus] = useState(''); // NOVO
+  const [resetStatus, setResetStatus] = useState('');
   const [tableStatus, setTableStatus] = useState('');
   const [userStatus, setUserStatus] = useState('');
   
@@ -36,13 +44,7 @@ export default function Home() {
   const [selectedGame, setSelectedGame] = useState<GameDetails | null>(null);
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
 
-  const [review, setReview] = useState<ReviewForm>({
-    jogabilidade: 5,
-    graficos: 5,
-    narrativa: 5,
-    audio: 5,
-    desempenho: 5,
-  });
+  const [review, setReview] = useState<ReviewForm>(defaultReviewState);
   const [reviewStatus, setReviewStatus] = useState(''); 
 
   // --- useEffect para Status ---
@@ -51,18 +53,57 @@ export default function Home() {
     fetch('/api/test-db').then(res => res.json()).then(data => setDbStatus(data.database_status || data.error));
   }, []);
 
+  // --- !!! NOVO useEffect: Carrega a Review quando um Jogo é Selecionado !!! ---
+  useEffect(() => {
+    // Se nenhum jogo está selecionado, não faça nada
+    if (!selectedGame) {
+      return;
+    }
+    
+    // Função async para buscar a review
+    const fetchReview = async () => {
+      try {
+        // Busca pela review do usuário 1 (hardcoded)
+        const res = await fetch(`/api/review?game_id=${selectedGame.id}&owner_id=1`);
+        const data = await res.json();
+        
+        if (data.error) {
+          // Nenhuma review encontrada, reseta o formulário
+          setReview(defaultReviewState);
+          setReviewStatus('Seja o primeiro a avaliar!');
+        } else {
+          // Review encontrada! Preenche o formulário
+          setReview({
+            jogabilidade: data.jogabilidade,
+            graficos: data.graficos,
+            narrativa: data.narrativa,
+            audio: data.audio,
+            desempenho: data.desempenho,
+          });
+          setReviewStatus('Review carregada do seu perfil.');
+        }
+      } catch (err) {
+        console.error("Falha ao buscar review", err);
+        setReviewStatus('Erro ao carregar review.');
+      }
+    };
+    
+    // Chama a função
+    fetchReview();
+    
+  }, [selectedGame]); // Este array faz o hook rodar toda vez que 'selectedGame' muda
+
+
   // --- Funções de Teste do Banco ---
   const handleResetDb = async () => {
     if (!confirm("TEM CERTEZA? Isso vai apagar TODOS os usuários e reviews.")) return;
     setResetStatus('Apagando...');
     fetch('/api/DANGEROUS-RESET-DB').then(res => res.json()).then(data => setResetStatus(data.message || data.error));
   };
-  
   const handleCreateTables = async () => {
     setTableStatus('Criando...');
     fetch('/api/create-tables').then(res => res.json()).then(data => setTableStatus(data.message || data.error));
   };
-  
   const handleCreateUser = async () => {
     setUserStatus('Criando...');
     fetch('/api/create-user', { method: 'POST' }).then(res => res.json()).then(data => setUserStatus(data.message || data.error));
@@ -83,14 +124,24 @@ export default function Home() {
   const handleGameClick = async (gameId: number) => {
     setIsDetailsLoading(true);
     setResults([]);
-    setReviewStatus(''); 
+    // Limpa o status e o formulário *antes* de carregar o novo jogo
+    setReviewStatus('');
+    setReview(defaultReviewState); 
+    
     const res = await fetch(`/api/game/${gameId}`);
     const data = await res.json();
+    
+    // Isso vai disparar o useEffect lá em cima
     if (data && data.name) setSelectedGame(data);
+    
     setIsDetailsLoading(false);
   };
 
-  const handleBackToSearch = () => setSelectedGame(null);
+  const handleBackToSearch = () => {
+    setSelectedGame(null);
+    setReview(defaultReviewState); // Reseta o formulário
+    setReviewStatus('');
+  };
   
   // --- Funções de Review ---
   const handleReviewChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -136,8 +187,6 @@ export default function Home() {
       <div style={{ padding: '10px', backgroundColor: '#f0f0f0', border: '1px solid #ccc', color: 'black', marginBottom: '20px' }}>
         <strong>Status API: {mensagem}</strong> | <strong>Status Banco: {dbStatus}</strong>
       </div>
-      
-      {/* --- !!! SEÇÃO DE ADMIN DO BANCO ATUALIZADA !!! --- */}
       <div style={{ marginBottom: '10px' }}>
         <button onClick={handleResetDb} style={{backgroundColor: '#8B0000', color: 'white'}}>
           0. RESETAR BANCO (PERIGO)
@@ -152,7 +201,6 @@ export default function Home() {
         <button onClick={handleCreateUser}>2. Criar Usuário</button>
         <span style={{ color: 'white', marginLeft: '10px' }}>{userStatus}</span>
       </div>
-      
       <hr style={{ margin: '30px 0' }} />
 
       <h1>Meu Perfil Gamer</h1>
@@ -215,7 +263,10 @@ export default function Home() {
             <button onClick={handleSubmitReview} style={{ fontSize: '16px', padding: '10px 20px', marginTop: '10px' }}>
               Salvar Review
             </button>
-            {reviewStatus && <p style={{ color: 'lime', marginLeft: '15px', display: 'inline' }}>{reviewStatus}</p>}
+            {/* O status agora pode ter cores diferentes */}
+            <span style={{ color: reviewStatus.includes('Erro') ? 'red' : 'lime', marginLeft: '15px' }}>
+              {reviewStatus}
+            </span>
           </div>
         </section>
       )}
