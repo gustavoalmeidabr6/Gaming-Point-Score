@@ -1,27 +1,23 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import requests
 import os
 
-# --- NOVAS IMPORTAÇÕES PARA O BANCO DE DADOS ---
+# Importações do SQLAlchemy
 from sqlalchemy import create_engine, text, Column, Integer, String, Float, ForeignKey
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from sqlalchemy.exc import OperationalError
 
-# --- CONFIGURAÇÃO DO BANCO DE DADOS ---
-DATABASE_URL = os.environ.get('POSTGRES_URL')
+# --- CONFIGURAÇÃO "PREGUIÇOSA" (LAZY) ---
 
-# Verifica se a URL do banco foi carregada
-if not DATABASE_URL:
-    print("ERRO FATAL: Variável de ambiente POSTGRES_URL não encontrada.")
-    # Isso fará a API falhar, mas saberemos o porquê nos logs.
-    
-engine = create_engine(DATABASE_URL, connect_args={"sslmode": "require"})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Deixamos as variáveis globais como 'None'
+# Elas só serão inicializadas na primeira vez que um endpoint for chamado
+engine = None
+SessionLocal = None
 Base = declarative_base()
 
-
-# --- DEFINIÇÃO DAS NOSSAS TABELAS (Modelos - Sem mudança) ---
+# --- DEFINIÇÃO DAS TABELAS (Modelos) ---
+# (Isso pode ser definido globalmente sem problemas)
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
@@ -40,12 +36,32 @@ class Review(Base):
     nota_geral = Column(Float)
     owner_id = Column(Integer, ForeignKey("users.id"))
 
-# --- !!! LINHA PROBLEMÁTICA REMOVIDA DAQUI !!! ---
-# Base.metadata.create_all(bind=engine) <-- REMOVIDO
 
+# --- FUNÇÃO DE DEPENDÊNCIA (A "MÁGICA") ---
+# Isso vai inicializar o banco e dar uma sessão para CADA endpoint que pedir
+def get_db():
+    global engine, SessionLocal
+    
+    try:
+        # Só inicializa na primeira vez
+        if engine is None:
+            DATABASE_URL = os.environ.get('POSTGRES_URL')
+            if not DATABASE_URL:
+                raise ValueError("POSTGRES_URL não foi encontrada no ambiente.")
+            
+            engine = create_engine(DATABASE_URL, connect_args={"sslmode": "require"})
+            SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+            print("Conexão com o banco inicializada.")
+
+        # Abre uma nova sessão
+        db = SessionLocal()
+        yield db # Entrega a sessão para o endpoint
+    
+    finally:
+        if db:
+            db.close() # Fecha a sessão quando o endpoint termina
 
 # --- INÍCIO DA APLICAÇÃO FASTAPI ---
-GIANTBOMB_API_KEY = os.environ.get('GIANTBOMB_API_KEY')
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -65,10 +81,12 @@ def get_hello():
 def get_root():
     return {"serviço": "API Perfil Gamer", "status": "online"}
 
-# --- !!! NOSSO NOVO ENDPOINT PARA CRIAR AS TABELAS !!! ---
+# --- NOVO: Criar Tabelas ---
 @app.get("/api/create-tables")
-def create_tables():
+def create_tables(db: Session = Depends(get_db)): # Pede a sessão do banco
     try:
+        global engine
+        # O Base.metadata precisa do 'engine' que foi criado no get_db
         Base.metadata.create_all(bind=engine)
         return {"message": "Tabelas criadas com sucesso (ou já existiam)!"}
     except Exception as e:
@@ -76,23 +94,17 @@ def create_tables():
 
 # --- ATUALIZADO: Teste do Banco ---
 @app.get("/api/test-db")
-def test_db():
-    if not DATABASE_URL:
-        return {"error": "POSTGRES_URL não foi encontrada no ambiente."}
+def test_db(db: Session = Depends(get_db)): # Pede a sessão do banco
     try:
-        db = SessionLocal()
         result = db.execute(text("SELECT 'Conexão com o banco de dados bem-sucedida!'"))
         message = result.fetchone()[0]
-        db.close()
         return {"database_status": message}
     except Exception as e:
-        # Retorna um JSON válido em caso de erro
         return {"error": f"Falha ao conectar ao banco: {e}"}
 
-# --- NOVO: Criar Usuário (Sem mudança) ---
+# --- ATUALIZADO: Criar Usuário ---
 @app.post("/api/create-user")
-def create_test_user():
-    db = SessionLocal()
+def create_test_user(db: Session = Depends(get_db)): # Pede a sessão do banco
     try:
         existing_user = db.query(User).filter(User.username == "usuarioteste").first()
         if existing_user:
@@ -107,15 +119,20 @@ def create_test_user():
     except Exception as e:
         db.rollback()
         return {"error": f"Erro ao criar usuário: {e}"}
-    finally:
-        db.close()
 
-# --- Endpoints de Jogo (Sem Mudanças) ---
+# --- Endpoints de Jogo (Sem Mudanças de Lógica) ---
+# Apenas adicionamos a checagem da chave da API aqui
+def get_api_key():
+    GIANTBOMB_API_KEY = os.environ.get('GIANTBOMB_API_KEY')
+    if not GIANTBOMB_API_KEY:
+        raise ValueError("GIANTBOMB_API_KEY não encontrada.")
+    return GIANTBOMB_API_KEY
+
 @app.get("/api/search")
-def search_games(q: str | None = None):
+def search_games(q: str | None = None, api_key: str = Depends(get_api_key)):
     if not q: return {"error": "Nenhum termo de busca fornecido"}
     url = "https://www.giantbomb.com/api/search/"
-    params = {'api_key': GIANTBOMB_API_KEY, 'format': 'json', 'query': q, 'resources': 'game', 'limit': 10}
+    params = {'api_key': api_key, 'format': 'json', 'query': q, 'resources': 'game', 'limit': 10}
     headers = { 'User-Agent': 'MeuPerfilGamerApp' }
     try:
         response = requests.get(url, params=params, headers=headers)
@@ -126,9 +143,9 @@ def search_games(q: str | None = None):
         return {"error": f"Erro ao chamar a API externa: {e}"}
 
 @app.get("/api/game/{game_id}")
-def get_game_details(game_id: str):
+def get_game_details(game_id: str, api_key: str = Depends(get_api_key)):
     url = f"https://www.giantbomb.com/api/game/3030-{game_id}/"
-    params = {'api_key': GIANTBOMB_API_KEY, 'format': 'json', 'field_list': 'name,deck,image,guid'}
+    params = {'api_key': api_key, 'format': 'json', 'field_list': 'name,deck,image,guid'}
     headers = { 'User-Agent': 'MeuPerfilGamerApp' }
     try:
         response = requests.get(url, params=params, headers=headers)
