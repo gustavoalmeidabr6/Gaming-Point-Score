@@ -67,7 +67,7 @@ export default function WelcomePage() {
               borderRadius: '5px'
             }}
           > 
-            {/* O "S>" que estava aqui foi REMOVIDO */}
+            {/* O "S>" que estava aqui (linha 69) foi REMOVIDO */}
             Começar (Ir para o App)
           </a>
         </div>
