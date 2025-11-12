@@ -101,14 +101,20 @@ export default function Home() {
     setTableStatus('Criando tabelas...');
     try {
       const response = await fetch('/api/create-tables');
+      
+      if (!response.ok) { // Checagem de erro
+          const errorText = await response.text();
+          throw new Error(`Falha na API ao criar tabelas: ${errorText}`);
+      }
+        
       const data = await response.json();
       if (data.message) {
         setTableStatus(data.message);
       } else {
         setTableStatus(`Erro ao criar tabelas: ${data.error}`);
       }
-    } catch (error) {
-      setTableStatus(`Falha grave ao criar tabelas: ${error}`);
+    } catch (error: any) {
+      setTableStatus(`Falha grave ao criar tabelas: ${error.message}`);
     }
   };
 
@@ -117,14 +123,20 @@ export default function Home() {
     setUserStatus('Criando usuário...');
     try {
       const response = await fetch('/api/create-user', { method: 'POST' });
+
+      if (!response.ok) { // Checagem de erro
+          const errorText = await response.text();
+          throw new Error(`Falha na API ao criar usuário: ${errorText}`);
+      }
+
       const data = await response.json();
       if (data.message) {
         setUserStatus(`${data.message} (ID: ${data.user_id})`);
       } else {
         setUserStatus(`Erro ao criar: ${data.error}`);
       }
-    } catch (error) {
-      setUserStatus(`Falha grave ao criar usuário: ${error}`);
+    } catch (error: any) {
+      setUserStatus(`Falha grave ao criar usuário: ${error.message}`);
     }
   };
 
