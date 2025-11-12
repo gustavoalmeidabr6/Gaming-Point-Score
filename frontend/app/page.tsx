@@ -21,7 +21,13 @@ type ReviewForm = {
   audio: number;
   desempenho: number;
 };
-// Estado inicial para resetar o formulário
+// --- !!! NOVO TIPO: Para a lista do perfil !!! ---
+type MyReview = {
+  id: number;
+  game_name: string;
+  nota_geral: number;
+};
+
 const defaultReviewState = {
   jogabilidade: 5,
   graficos: 5,
@@ -38,6 +44,9 @@ export default function Home() {
   const [tableStatus, setTableStatus] = useState('');
   const [userStatus, setUserStatus] = useState('');
   
+  // --- !!! NOVO ESTADO: Lista de reviews do perfil !!! ---
+  const [myReviews, setMyReviews] = useState<MyReview[]>([]);
+
   const [query, setQuery] = useState(''); 
   const [results, setResults] = useState<GameSearchResult[]>([]);
   const [isSearchLoading, setIsSearchLoading] = useState(false);
@@ -46,37 +55,39 @@ export default function Home() {
 
   const [review, setReview] = useState<ReviewForm>(defaultReviewState);
   const [reviewStatus, setReviewStatus] = useState(''); 
-  
-  // --- !!! NOVO ESTADO PARA A MÉDIA !!! ---
-  // Usamos 'null' para saber quando nenhuma nota foi calculada/carregada
   const [averageScore, setAverageScore] = useState<number | null>(null);
 
 
-  // --- useEffect para Status ---
+  // --- useEffect: Carrega Status E PERFIL ---
   useEffect(() => {
+    // Carrega status da API e Banco
     fetch('/api/ola').then(res => res.json()).then(data => setMensagem(data.mensagem));
     fetch('/api/test-db').then(res => res.json()).then(data => setDbStatus(data.database_status || data.error));
-  }, []);
-
-  // --- useEffect: Carrega a Review ---
-  useEffect(() => {
-    if (!selectedGame) {
-      return;
-    }
     
+    // --- !!! ATUALIZADO: Carrega as reviews do perfil !!! ---
+    fetch('/api/my-reviews')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setMyReviews(data);
+        } else {
+          console.error("Erro ao carregar 'my-reviews':", data.error);
+        }
+      });
+  }, []); // Roda uma vez quando a página carrega
+
+  // --- useEffect: Carrega a Review (Sem Mudanças) ---
+  useEffect(() => {
+    if (!selectedGame) return;
     const fetchReview = async () => {
       try {
         const res = await fetch(`/api/review?game_id=${selectedGame.id}&owner_id=1`);
         const data = await res.json();
-        
         if (data.error) {
-          // Nenhuma review encontrada
           setReview(defaultReviewState);
-          // Calcula a média inicial (que será 5.0)
           setAverageScore((Object.values(defaultReviewState).reduce((a, b) => a + b, 0) / 5));
           setReviewStatus('Seja o primeiro a avaliar!');
         } else {
-          // Review encontrada!
           setReview({
             jogabilidade: data.jogabilidade,
             graficos: data.graficos,
@@ -84,24 +95,20 @@ export default function Home() {
             audio: data.audio,
             desempenho: data.desempenho,
           });
-          // --- !!! AQUI: Salva a nota geral carregada !!! ---
           setAverageScore(data.nota_geral);
           setReviewStatus('Review carregada do seu perfil.');
         }
       } catch (err) {
-        console.error("Falha ao buscar review", err);
         setReviewStatus('Erro ao carregar review.');
       }
     };
-    
     fetchReview();
-    
   }, [selectedGame]); 
 
 
-  // --- Funções de Teste do Banco ---
+  // --- Funções de Teste do Banco (Sem Mudanças) ---
   const handleResetDb = async () => {
-    if (!confirm("TEM CERTEZA? Isso vai apagar TODOS os usuários e reviews.")) return;
+    if (!confirm("TEM CERTEZA?")) return;
     setResetStatus('Apagando...');
     fetch('/api/DANGEROUS-RESET-DB').then(res => res.json()).then(data => setResetStatus(data.message || data.error));
   };
@@ -114,7 +121,7 @@ export default function Home() {
     fetch('/api/create-user', { method: 'POST' }).then(res => res.json()).then(data => setUserStatus(data.message || data.error));
   };
 
-  // --- Funções de Busca ---
+  // --- Funções de Busca (Sem Mudanças) ---
   const handleSearch = async () => {
     if (!query) return;
     setIsSearchLoading(true);
@@ -125,39 +132,29 @@ export default function Home() {
     if (Array.isArray(data)) setResults(data);
     setIsSearchLoading(false);
   };
-
   const handleGameClick = async (gameId: number) => {
     setIsDetailsLoading(true);
     setResults([]);
     setReviewStatus('');
     setReview(defaultReviewState); 
-    setAverageScore(null); // Limpa a média antiga
-    
+    setAverageScore(null); 
     const res = await fetch(`/api/game/${gameId}`);
     const data = await res.json();
     if (data && data.name) setSelectedGame(data);
     setIsDetailsLoading(false);
   };
-
   const handleBackToSearch = () => {
     setSelectedGame(null);
     setReview(defaultReviewState); 
     setReviewStatus('');
-    setAverageScore(null); // Limpa a média
+    setAverageScore(null);
   };
   
-  // --- Funções de Review ---
+  // --- Funções de Review (Sem Mudanças) ---
   const handleReviewChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
-    // Atualiza o estado da 'review'
-    const updatedReview = {
-      ...review,
-      [name]: Number(value),
-    };
+    const updatedReview = { ...review, [name]: Number(value) };
     setReview(updatedReview);
-    
-    // --- !!! AQUI: Calcula e atualiza a média em tempo real !!! ---
     const scores = Object.values(updatedReview);
     const newAverage = scores.reduce((a, b) => a + b, 0) / scores.length;
     setAverageScore(newAverage);
@@ -166,12 +163,7 @@ export default function Home() {
   const handleSubmitReview = async () => {
     if (!selectedGame) return;
     setReviewStatus('Salvando...');
-    const reviewData = {
-      ...review,
-      game_id: selectedGame.id,
-      game_name: selectedGame.name,
-      owner_id: 1 
-    };
+    const reviewData = { ...review, game_id: selectedGame.id, game_name: selectedGame.name, owner_id: 1 };
     try {
       const response = await fetch('/api/review', {
         method: 'POST',
@@ -181,6 +173,9 @@ export default function Home() {
       const data = await response.json();
       if (data.message) {
         setReviewStatus(data.message);
+        // --- !!! ATUALIZADO: Atualiza a lista do perfil em tempo real !!! ---
+        // Simplesmente recarrega a lista
+        fetch('/api/my-reviews').then(res => res.json()).then(setMyReviews);
       } else {
         setReviewStatus(`Erro: ${data.error}`);
       }
@@ -215,11 +210,46 @@ export default function Home() {
       <hr style={{ margin: '30px 0' }} />
 
       <h1>Meu Perfil Gamer</h1>
+      
+      {/* --- !!! SEÇÃO DO PERFIL (MINHAS REVIEWS) !!! --- */}
+      <section style={{ marginBottom: '40px', padding: '20px', backgroundColor: '#1a1a1a', border: '1px solid #444', borderRadius: '8px' }}>
+        <h2 style={{ color: 'white', marginTop: 0, borderBottom: '1px solid #555', paddingBottom: '10px' }}>
+          Meus Jogos Avaliados
+        </h2>
+        {myReviews.length === 0 ? (
+          <p style={{ color: '#ccc' }}>Você ainda não avaliou nenhum jogo.</p>
+        ) : (
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {myReviews.map((review) => (
+              <li key={review.id} style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                padding: '15px 10px', 
+                borderBottom: '1px solid #333' 
+              }}>
+                <span style={{ color: 'white', fontSize: '18px' }}>{review.game_name}</span>
+                <span style={{ 
+                  color: 'lime', 
+                  fontSize: '18px', 
+                  fontWeight: 'bold', 
+                  backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                  padding: '5px 10px',
+                  borderRadius: '5px'
+                }}>
+                  Média: {review.nota_geral.toFixed(1)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {/* --- SEÇÃO 1: TELA DE BUSCA --- */}
       {!selectedGame && (
         <section>
           <h2>Buscar Jogo</h2>
+          {/* ... (código de busca sem mudanças) ... */}
           <div style={{ display: 'flex' }}>
             <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Digite o nome de um jogo..." style={{ fontSize: '16px', padding: '10px', color: 'black', width: '300px' }} />
             <button onClick={handleSearch} style={{ fontSize: '16px', padding: '10px', marginLeft: '10px' }}>
@@ -243,28 +273,23 @@ export default function Home() {
       {/* --- SEÇÃO 2: TELA DE DETALHES --- */}
       {selectedGame && !isDetailsLoading && (
         <section>
+          {/* ... (código de detalhes do jogo e formulário de review - sem mudanças) ... */}
           <button onClick={handleBackToSearch} style={{ fontSize: '16px', padding: '10px', marginBottom: '20px' }}>
             &larr; Voltar para a Busca
           </button>
-          
           <img src={selectedGame.image.medium_url} alt={selectedGame.name} style={{ width: '100%', maxWidth: '400px', height: 'auto' }}/>
           <h2 style={{ color: 'white', marginTop: '20px' }}>{selectedGame.name}</h2>
           <p style={{ color: '#ccc' }}>{selectedGame.deck}</p>
-
-          {/* --- Formulário de Review --- */}
           <div style={{ marginTop: '30px', padding: '20px', backgroundColor: '#222', maxWidth: '500px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ color: 'white', margin: 0 }}>Meu Review</h3>
-              {/* --- !!! AQUI: A NOTA MÉDIA !!! --- */}
               {averageScore !== null && (
                 <h2 style={{ color: 'lime', margin: 0 }}>
                   Média: {averageScore.toFixed(1)}
                 </h2>
               )}
             </div>
-            
             <hr style={{ margin: '15px 0', borderColor: '#444' }} />
-
             {(Object.keys(review) as Array<keyof ReviewForm>).map((key) => (
               <div key={key} style={{ marginBottom: '15px' }}>
                 <label style={{ color: 'white', textTransform: 'capitalize', display: 'block', marginBottom: '5px' }}>
