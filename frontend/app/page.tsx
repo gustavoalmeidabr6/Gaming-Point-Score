@@ -21,7 +21,6 @@ type ReviewForm = {
   audio: number;
   desempenho: number;
 };
-// --- !!! NOVO TIPO: Para a lista do perfil !!! ---
 type MyReview = {
   id: number;
   game_name: string;
@@ -44,7 +43,6 @@ export default function Home() {
   const [tableStatus, setTableStatus] = useState('');
   const [userStatus, setUserStatus] = useState('');
   
-  // --- !!! NOVO ESTADO: Lista de reviews do perfil !!! ---
   const [myReviews, setMyReviews] = useState<MyReview[]>([]);
 
   const [query, setQuery] = useState(''); 
@@ -58,22 +56,48 @@ export default function Home() {
   const [averageScore, setAverageScore] = useState<number | null>(null);
 
 
-  // --- useEffect: Carrega Status E PERFIL ---
+  // --- !!! useEffect PRINCIPAL (ATUALIZADO) !!! ---
   useEffect(() => {
-    // Carrega status da API e Banco
+    // A chamada "ola" é independente, pode rodar
     fetch('/api/ola').then(res => res.json()).then(data => setMensagem(data.mensagem));
-    fetch('/api/test-db').then(res => res.json()).then(data => setDbStatus(data.database_status || data.error));
     
-    // --- !!! ATUALIZADO: Carrega as reviews do perfil !!! ---
-    fetch('/api/my-reviews')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setMyReviews(data);
+    // Vamos criar uma função "async" para poder esperar (await)
+    // as chamadas terminarem na ordem correta.
+    const initializeProfile = async () => {
+      try {
+        // 1. Primeiro, testa o banco de dados
+        setDbStatus('Testando conexão...');
+        const dbResponse = await fetch('/api/test-db');
+        const dbData = await dbResponse.json();
+        
+        if (dbData.database_status) {
+          // 1a. Deu certo!
+          setDbStatus(dbData.database_status);
+          
+          // 2. AGORA, e somente agora, buscamos as reviews do perfil
+          const reviewsResponse = await fetch('/api/my-reviews');
+          const reviewsData = await reviewsResponse.json();
+          
+          if (Array.isArray(reviewsData)) {
+            setMyReviews(reviewsData);
+          } else {
+            console.error("Erro ao carregar 'my-reviews':", reviewsData.error);
+          }
+          
         } else {
-          console.error("Erro ao carregar 'my-reviews':", data.error);
+          // 1b. O teste do banco falhou
+          setDbStatus(dbData.error || 'Falha ao conectar ao banco');
         }
-      });
+        
+      } catch (error) {
+        console.error("Erro na inicialização:", error);
+        setDbStatus('Erro grave de conexão.');
+      }
+    };
+    
+    // Executa a função de inicialização
+    initializeProfile();
+    
   }, []); // Roda uma vez quando a página carrega
 
   // --- useEffect: Carrega a Review (Sem Mudanças) ---
@@ -159,7 +183,6 @@ export default function Home() {
     const newAverage = scores.reduce((a, b) => a + b, 0) / scores.length;
     setAverageScore(newAverage);
   };
-
   const handleSubmitReview = async () => {
     if (!selectedGame) return;
     setReviewStatus('Salvando...');
@@ -173,8 +196,7 @@ export default function Home() {
       const data = await response.json();
       if (data.message) {
         setReviewStatus(data.message);
-        // --- !!! ATUALIZADO: Atualiza a lista do perfil em tempo real !!! ---
-        // Simplesmente recarrega a lista
+        // Atualiza a lista do perfil em tempo real
         fetch('/api/my-reviews').then(res => res.json()).then(setMyReviews);
       } else {
         setReviewStatus(`Erro: ${data.error}`);
@@ -211,13 +233,13 @@ export default function Home() {
 
       <h1>Meu Perfil Gamer</h1>
       
-      {/* --- !!! SEÇÃO DO PERFIL (MINHAS REVIEWS) !!! --- */}
+      {/* --- SEÇÃO DO PERFIL (MINHAS REVIEWS) --- */}
       <section style={{ marginBottom: '40px', padding: '20px', backgroundColor: '#1a1a1a', border: '1px solid #444', borderRadius: '8px' }}>
         <h2 style={{ color: 'white', marginTop: 0, borderBottom: '1px solid #555', paddingBottom: '10px' }}>
           Meus Jogos Avaliados
         </h2>
         {myReviews.length === 0 ? (
-          <p style={{ color: '#ccc' }}>Você ainda não avaliou nenhum jogo.</p>
+          <p style={{ color: '#ccc' }}>{dbStatus.includes('Testando') ? 'Carregando reviews...' : 'Você ainda não avaliou nenhum jogo.'}</p>
         ) : (
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {myReviews.map((review) => (
@@ -249,9 +271,8 @@ export default function Home() {
       {!selectedGame && (
         <section>
           <h2>Buscar Jogo</h2>
-          {/* ... (código de busca sem mudanças) ... */}
           <div style={{ display: 'flex' }}>
-            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Digite o nome de um jogo..." style={{ fontSize: '16px', padding: '10px', color: 'black', width: '300px' }} />
+            <input type="text" value={query} onChange={(e) => setQuery(e.g.value)} placeholder="Digite o nome de um jogo..." style={{ fontSize: '16px', padding: '10px', color: 'black', width: '300px' }} />
             <button onClick={handleSearch} style={{ fontSize: '16px', padding: '10px', marginLeft: '10px' }}>
               {isSearchLoading ? 'Buscando...' : 'Buscar'}
             </button>
@@ -273,7 +294,6 @@ export default function Home() {
       {/* --- SEÇÃO 2: TELA DE DETALHES --- */}
       {selectedGame && !isDetailsLoading && (
         <section>
-          {/* ... (código de detalhes do jogo e formulário de review - sem mudanças) ... */}
           <button onClick={handleBackToSearch} style={{ fontSize: '16px', padding: '10px', marginBottom: '20px' }}>
             &larr; Voltar para a Busca
           </button>
