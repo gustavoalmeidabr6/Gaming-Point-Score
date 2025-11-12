@@ -12,11 +12,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-br">
-      {/* A MUDANÇA ESTÁ AQUI: 
-        Removemos o 'style={{...}}'
-        e aplicamos as classes do Tailwind 'bg-gray-900' e 'text-white'
-        diretamente no body.
-      */}
       <body className="bg-gray-900 text-white">
         {children}
       </body>
