@@ -2,10 +2,8 @@ import type { Config } from 'tailwindcss';
 
 const config: Config = {
   content: [
-    // --- !!! AQUI ESTÁ A CORREÇÃO !!! ---
-    // Removemos o './src/' da frente dos caminhos.
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}', // (Para o futuro)
+    './app/**/*.{js,ts,jsx,tsx,mdx}', // Caminho correto!
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {},
