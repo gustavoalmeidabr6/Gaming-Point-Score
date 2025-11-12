@@ -1,8 +1,10 @@
+// Caminho do arquivo: frontend/app/dashboard/page.tsx
 'use client';
 
+// Lógica original (imports, types, etc.)
 import { useState, useEffect } from 'react';
 
-// --- Tipos ---
+// --- Tipos (Original) ---
 type GameSearchResult = {
   id: number;
   name: string;
@@ -35,13 +37,10 @@ const defaultReviewState = {
   desempenho: 5,
 };
 
-export default function Home() {
-  // --- Estados ---
+export default function DashboardPage() {
+  // --- Estados (Original) ---
   const [mensagem, setMensagem] = useState('Carregando...');
   const [dbStatus, setDbStatus] = useState('');
-  const [resetStatus, setResetStatus] = useState('');
-  const [tableStatus, setTableStatus] = useState('');
-  const [userStatus, setUserStatus] = useState('');
   
   const [myReviews, setMyReviews] = useState<MyReview[]>([]);
 
@@ -55,8 +54,11 @@ export default function Home() {
   const [reviewStatus, setReviewStatus] = useState(''); 
   const [averageScore, setAverageScore] = useState<number | null>(null);
 
+  // --- NOVO ESTADO PARA AS ABAS ---
+  const [activeTab, setActiveTab] = useState('buscar'); // 'buscar' ou 'perfil'
 
-  // --- useEffect PRINCIPAL (ATUALIZADO) ---
+
+  // --- useEffect PRINCIPAL (Original, limpo) ---
   useEffect(() => {
     fetch('/api/ola').then(res => res.json()).then(data => setMensagem(data.mensagem));
     
@@ -92,7 +94,7 @@ export default function Home() {
     
   }, []); // Roda uma vez quando a página carrega
 
-  // --- useEffect: Carrega a Review (Sem Mudanças) ---
+  // --- useEffect: Carrega a Review (Original) ---
   useEffect(() => {
     if (!selectedGame) return;
     const fetchReview = async () => {
@@ -122,22 +124,7 @@ export default function Home() {
   }, [selectedGame]); 
 
 
-  // --- Funções de Teste do Banco (Sem Mudanças) ---
-  const handleResetDb = async () => {
-    if (!confirm("TEM CERTEZA?")) return;
-    setResetStatus('Apagando...');
-    fetch('/api/DANGEROUS-RESET-DB').then(res => res.json()).then(data => setResetStatus(data.message || data.error));
-  };
-  const handleCreateTables = async () => {
-    setTableStatus('Criando...');
-    fetch('/api/create-tables').then(res => res.json()).then(data => setTableStatus(data.message || data.error));
-  };
-  const handleCreateUser = async () => {
-    setUserStatus('Criando...');
-    fetch('/api/create-user', { method: 'POST' }).then(res => res.json()).then(data => setUserStatus(data.message || data.error));
-  };
-
-  // --- Funções de Busca (Sem Mudanças) ---
+  // --- Funções de Busca (Original) ---
   const handleSearch = async () => {
     if (!query) return;
     setIsSearchLoading(true);
@@ -166,7 +153,7 @@ export default function Home() {
     setAverageScore(null);
   };
   
-  // --- Funções de Review (Sem Mudanças) ---
+  // --- Funções de Review (Original) ---
   const handleReviewChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const updatedReview = { ...review, [name]: Number(value) };
@@ -199,137 +186,218 @@ export default function Home() {
   };
 
 
-  // --- HTML (JSX) ---
+  // --- HTML (JSX) - VERSÃO COM ABAS ---
   return (
-    <main style={{ padding: '40px', fontFamily: 'sans-serif' }}>
+    <main className="min-h-screen bg-gray-900 p-4 md:p-8 text-white">
       
-      {/* --- SEÇÃO DE STATUS --- */}
-      <div style={{ padding: '10px', backgroundColor: '#f0f0f0', border: '1px solid #ccc', color: 'black', marginBottom: '20px' }}>
-        <strong>Status API: {mensagem}</strong> | <strong>Status Banco: {dbStatus}</strong>
-      </div>
-      <div style={{ marginBottom: '10px' }}>
-        <button onClick={handleResetDb} style={{backgroundColor: '#8B0000', color: 'white'}}>
-          0. RESETAR BANCO (PERIGO)
-        </button>
-        <span style={{ color: 'white', marginLeft: '10px' }}>{resetStatus}</span>
-      </div>
-      <div style={{ marginBottom: '10px' }}>
-        <button onClick={handleCreateTables}>1. Criar Tabelas</button>
-        <span style={{ color: 'white', marginLeft: '10px' }}>{tableStatus}</span>
-      </div>
-      <div style={{ marginBottom: '30px' }}>
-        <button onClick={handleCreateUser}>2. Criar Usuário</button>
-        <span style={{ color: 'white', marginLeft: '10px' }}>{userStatus}</span>
-      </div>
-      <hr style={{ margin: '30px 0' }} />
-
-      <h1>Meu Perfil Gamer</h1>
-      
-      {/* --- SEÇÃO DO PERFIL (MINHAS REVIEWS) --- */}
-      <section style={{ marginBottom: '40px', padding: '20px', backgroundColor: '#1a1a1a', border: '1px solid #444', borderRadius: '8px' }}>
-        <h2 style={{ color: 'white', marginTop: 0, borderBottom: '1px solid #555', paddingBottom: '10px' }}>
-          Meus Jogos Avaliados
-        </h2>
-        {myReviews.length === 0 ? (
-          <p style={{ color: '#ccc' }}>{dbStatus.includes('Testando') ? 'Carregando reviews...' : 'Você ainda não avaliou nenhum jogo.'}</p>
-        ) : (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {myReviews.map((review) => (
-              <li key={review.id} style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                padding: '15px 10px', 
-                borderBottom: '1px solid #333' 
-              }}>
-                <span style={{ color: 'white', fontSize: '18px' }}>{review.game_name}</span>
-                <span style={{ 
-                  color: 'lime', 
-                  fontSize: '18px', 
-                  fontWeight: 'bold', 
-                  backgroundColor: 'rgba(0, 255, 0, 0.1)',
-                  padding: '5px 10px',
-                  borderRadius: '5px'
-                }}>
-                  Média: {review.nota_geral.toFixed(1)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+      {/* --- SEÇÃO 1: CABEÇALHO DO PERFIL (Sempre visível) --- */}
+      <section className="mb-8 flex items-center gap-4 rounded-lg bg-gray-800 p-6 shadow-lg">
+        {/* Imagem de Perfil (Placeholder) */}
+        <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-gray-700 text-sm text-gray-400">
+          Foto
+        </div>
+        
+        {/* Informações do Perfil */}
+        <div>
+          <h1 className="text-3xl font-bold text-white">
+            Usuário de Teste
+          </h1>
+          <p className="text-lg text-lime-400">
+            Nível 5
+          </p>
+        </div>
       </section>
 
-      {/* --- SEÇÃO 1: TELA DE BUSCA --- */}
-      {!selectedGame && (
-        <section>
-          <h2>Buscar Jogo</h2>
-          <div style={{ display: 'flex' }}>
-            {/* --- !!! AQUI ESTÁ A CORREÇÃO !!! --- */}
-            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Digite o nome de um jogo..." style={{ fontSize: '16px', padding: '10px', color: 'black', width: '300px' }} />
-            <button onClick={handleSearch} style={{ fontSize: '16px', padding: '10px', marginLeft: '10px' }}>
-              {isSearchLoading ? 'Buscando...' : 'Buscar'}
-            </button>
-          </div>
-          <div style={{ marginTop: '30px' }}>
-            {results.map((game) => (
-              <div key={game.id} onClick={() => handleGameClick(game.id)} style={{ display: 'flex', alignItems: 'center', marginBottom: '15px', padding: '10px', backgroundColor: '#333', cursor: 'pointer' }}>
-                <img src={game.image.thumb_url} alt={game.name} style={{ width: '100px', height: 'auto', marginRight: '15px' }} />
-                <h3 style={{ color: 'white' }}>{game.name}</h3>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      {/* --- SEÇÃO 2: ABAS DE NAVEGAÇÃO --- */}
+      <nav className="mb-8 flex border-b border-gray-700">
+        <button
+          // Muda o estilo se a aba 'buscar' estiver ativa
+          className={`px-6 py-3 text-lg font-medium ${
+            activeTab === 'buscar' 
+            ? 'border-b-2 border-lime-400 text-lime-400' 
+            : 'text-gray-400 hover:text-gray-200'
+          }`}
+          onClick={() => setActiveTab('buscar')}
+        >
+          Buscar
+        </button>
+        <button
+          // Muda o estilo se a aba 'perfil' estiver ativa
+          className={`px-6 py-3 text-lg font-medium ${
+            activeTab === 'perfil' 
+            ? 'border-b-2 border-lime-400 text-lime-400' 
+            : 'text-gray-400 hover:text-gray-200'
+          }`}
+          onClick={() => setActiveTab('perfil')}
+        >
+          Meu Perfil Gamer
+        </button>
+        {/* Podemos adicionar a aba "Estatísticas" aqui no futuro */}
+      </nav>
 
-      {/* Carregando Detalhes */}
-      {isDetailsLoading && <p style={{ color: 'white' }}>Carregando detalhes...</p>}
+      {/* --- SEÇÃO 3: CONTEÚDO DAS ABAS --- */}
 
-      {/* --- SEÇÃO 2: TELA DE DETALHES --- */}
-      {selectedGame && !isDetailsLoading && (
-        <section>
-          <button onClick={handleBackToSearch} style={{ fontSize: '16px', padding: '10px', marginBottom: '20px' }}>
-            &larr; Voltar para a Busca
-          </button>
-          <img src={selectedGame.image.medium_url} alt={selectedGame.name} style={{ width: '100%', maxWidth: '400px', height: 'auto' }}/>
-          <h2 style={{ color: 'white', marginTop: '20px' }}>{selectedGame.name}</h2>
-          <p style={{ color: '#ccc' }}>{selectedGame.deck}</p>
-          <div style={{ marginTop: '30px', padding: '20px', backgroundColor: '#222', maxWidth: '500px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ color: 'white', margin: 0 }}>Meu Review</h3>
-              {averageScore !== null && (
-                <h2 style={{ color: 'lime', margin: 0 }}>
-                  Média: {averageScore.toFixed(1)}
-                </h2>
-              )}
-            </div>
-            <hr style={{ margin: '15px 0', borderColor: '#444' }} />
-            {(Object.keys(review) as Array<keyof ReviewForm>).map((key) => (
-              <div key={key} style={{ marginBottom: '15px' }}>
-                <label style={{ color: 'white', textTransform: 'capitalize', display: 'block', marginBottom: '5px' }}>
-                  {key}: {review[key]}
-                </label>
-                <input
-                  type="range"
-                  name={key}
-                  min="0"
-                  max="10"
-                  step="0.5"
-                  value={review[key]}
-                  onChange={handleReviewChange}
-                  style={{ width: '100%' }}
+      {/* --- ABA DE BUSCA --- */}
+      {/* 'hidden' do Tailwind esconde o 'div' se a condição for falsa */}
+      <div className={activeTab === 'buscar' ? '' : 'hidden'}>
+        
+        {/* SE UM JOGO NÃO ESTIVER SELECIONADO (Mostra a Busca e Relevantes) */}
+        {!selectedGame && (
+          <>
+            {/* Ferramenta de Busca */}
+            <section className="mb-8 rounded-lg bg-gray-800 p-6 shadow-lg">
+              <h2 className="mb-4 text-2xl font-semibold text-white">
+                Buscar Jogo
+              </h2>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={query} 
+                  onChange={(e) => setQuery(e.target.value)} 
+                  placeholder="Digite o nome de um jogo..." 
+                  className="flex-grow rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-500 focus:border-lime-400 focus:outline-none focus:ring-lime-400"
                 />
+                <button 
+                  onClick={handleSearch}
+                  className="rounded-md bg-lime-400 px-6 py-2 font-bold text-black transition-all hover:bg-lime-300"
+                >
+                  {isSearchLoading ? 'Buscando...' : 'Buscar'}
+                </button>
               </div>
-            ))}
-            <button onClick={handleSubmitReview} style={{ fontSize: '16px', padding: '10px 20px', marginTop: '10px' }}>
-              Salvar Review
+            </section>
+            
+            {/* Resultados da Busca (se houver) */}
+            {results.length > 0 && (
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-6">
+                {results.map((game) => (
+                  <div 
+                    key={game.id} 
+                    onClick={() => handleGameClick(game.id)} 
+                    className="cursor-pointer rounded-lg bg-gray-700 p-2 transition-all hover:bg-gray-600"
+                  >
+                    <img src={game.image.thumb_url} alt={game.name} className="w-full rounded-md object-cover" />
+                    <h3 className="mt-2 truncate text-sm font-medium text-white">{game.name}</h3>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Jogos Relevantes (Os "balões" que você pediu) */}
+            {results.length === 0 && !isSearchLoading && (
+              <section>
+                <h2 className="mb-4 text-2xl font-semibold text-white">
+                  Jogos Relevantes (Placeholders)
+                </h2>
+                {/* Placeholder dos "balões" */}
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-6">
+                  {/* Exemplo de Balão/Card de Jogo */}
+                  <div className="rounded-lg bg-gray-800 p-3 shadow-lg">
+                    <div className="h-48 w-full rounded-md bg-gray-700" /> {/* Imagem placeholder */}
+                    <h3 className="mt-2 text-white">Jogo Relevante 1</h3>
+                  </div>
+                  <div className="rounded-lg bg-gray-800 p-3 shadow-lg">
+                    <div className="h-48 w-full rounded-md bg-gray-700" />
+                    <h3 className="mt-2 text-white">Jogo Relevante 2</h3>
+                  </div>
+                  <div className="rounded-lg bg-gray-800 p-3 shadow-lg">
+                    <div className="h-48 w-full rounded-md bg-gray-700" />
+                    <h3 className="mt-2 text-white">Jogo Relevante 3</h3>
+                  </div>
+                  {/* Adicione mais placeholders aqui */}
+                </div>
+              </section>
+            )}
+          </>
+        )}
+
+        {/* SE UM JOGO ESTIVER SELECIONADO (Mostra os Detalhes e Review) */}
+        {isDetailsLoading && <p className="text-center text-lg text-white">Carregando detalhes...</p>}
+        {selectedGame && !isDetailsLoading && (
+          <section className="rounded-lg bg-gray-800 p-6 shadow-lg">
+            <button 
+              onClick={handleBackToSearch} 
+              className="mb-4 rounded-md bg-gray-600 px-4 py-2 text-sm text-white transition-all hover:bg-gray-500"
+            >
+              &larr; Voltar
             </button>
-            <span style={{ color: reviewStatus.includes('Erro') ? 'red' : 'lime', marginLeft: '15px' }}>
-              {reviewStatus}
-            </span>
-          </div>
+            <div className="flex flex-col gap-6 md:flex-row">
+              <img src={selectedGame.image.medium_url} alt={selectedGame.name} className="w-full rounded-lg md:w-1/2" />
+              <div className="md:w-1/2">
+                <h2 className="mb-2 text-3xl font-bold text-white">{selectedGame.name}</h2>
+                <p className="mb-4 text-sm text-gray-400">{selectedGame.deck}</p>
+                <div className="rounded-lg bg-gray-700 p-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-semibold text-white">Meu Review</h3>
+                    {averageScore !== null && (
+                      <h2 className="text-2xl font-bold text-lime-400">
+                        {averageScore.toFixed(1)}
+                      </h2>
+                    )}
+                  </div>
+                  <hr className="my-3 border-gray-600" />
+                  {(Object.keys(review) as Array<keyof ReviewForm>).map((key) => (
+                    <div key={key} className="mb-3">
+                      <label className="mb-1 block text-sm capitalize text-gray-300">
+                        {key}: <span className="font-bold text-white">{review[key]}</span>
+                      </label>
+                      <input
+                        type="range" name={key} min="0" max="10" step="0.5"
+                        value={review[key]} onChange={handleReviewChange}
+                        className="w-full accent-lime-400"
+                      />
+                    </div>
+                  ))}
+                  <button 
+                    onClick={handleSubmitReview}
+                    className="mt-2 w-full rounded-md bg-lime-400 px-6 py-2 font-bold text-black transition-all hover:bg-lime-300"
+                  >
+                    Salvar Review
+                  </button>
+                  <p className={`mt-2 text-center text-sm ${reviewStatus.includes('Erro') ? 'text-red-400' : 'text-lime-400'}`}>
+                    {reviewStatus}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+      </div>
+
+      {/* --- ABA DE PERFIL GAMER --- */}
+      {/* 'hidden' do Tailwind esconde o 'div' se a condição for falsa */}
+      <div className={activeTab === 'perfil' ? '' : 'hidden'}>
+        <section className="rounded-lg bg-gray-800 p-6 shadow-lg">
+          <h2 className="mb-4 border-b border-gray-700 pb-3 text-2xl font-semibold text-white">
+            Meus Jogos Avaliados
+          </h2>
+          {/* Esta é a lista que já estava funcionando, agora movida para esta aba */}
+          {myReviews.length === 0 ? (
+            <p className="text-gray-400">
+              {dbStatus.includes('Testando') ? 'Carregando reviews...' : 'Você ainda não avaliou nenhum jogo.'}
+            </p>
+          ) : (
+            <ul className="max-h-[600px] space-y-3 overflow-y-auto">
+              {myReviews.map((review) => (
+                <li 
+                  key={review.id} 
+                  className="flex items-center justify-between rounded-lg bg-gray-700 p-4"
+                >
+                  <span className="font-medium text-white">{review.game_name}</span>
+                  <span className="rounded-md bg-lime-600 px-3 py-1 text-sm font-bold text-white">
+                    {review.nota_geral.toFixed(1)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
-      )}
-      
+        
+        {/* Status da API (opcional, para debug) */}
+        <div className="mt-4 rounded-lg bg-gray-800 p-4 text-xs text-gray-500">
+          Status API: {mensagem} | Status Banco: {dbStatus}
+        </div>
+      </div>
+
     </main>
   );
 }
