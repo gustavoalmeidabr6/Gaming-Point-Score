@@ -8,7 +8,10 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      // Deixe esta secção 'extend' vazia por agora
+      // Adicione esta secção de cores:
+      colors: {
+        'lime-green': '#3bbe5d', // A sua cor verde principal
+      }
     },
   },
   plugins: [],
