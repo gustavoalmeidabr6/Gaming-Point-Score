@@ -8,12 +8,7 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      // Adicione esta secção:
-      fontFamily: {
-        sans: ['var(--font-inter)', 'sans-serif'], // 'sans' é a fonte padrão
-        jersey: ['var(--font-jersey)', 'sans-serif'], // 'jersey' é a fonte de título
-      },
-      // (Podemos adicionar as cores verde-limão aqui mais tarde)
+      // Deixe esta secção 'extend' vazia por agora
     },
   },
   plugins: [],
