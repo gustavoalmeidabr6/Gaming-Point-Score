@@ -14,10 +14,9 @@
     {
       "source": "/api/(.*)",
       "destination": "/api/index.py"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/frontend/$1"
     }
+    
+    // A regra "source": "/(.*)" FOI REMOVIDA.
+    // O Next.js vai gerir o resto automaticamente.
   ]
 }
