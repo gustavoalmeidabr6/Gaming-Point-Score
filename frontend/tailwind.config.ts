@@ -1,8 +1,8 @@
 // Caminho: frontend/tailwind.config.ts
 import type { Config } from 'tailwindcss';
 
-// A sintaxe do v4 usa "export default" diretamente
-export default {
+// Esta é a sintaxe correta para o Tailwind v3
+const config: Config = {
   
   // O 'content' fica aqui
   content: [
@@ -10,16 +10,18 @@ export default {
     './components/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   
-  // A sintaxe v4 move 'theme' e 'plugins' para dentro de um objeto 'config'
-  config: {
-    theme: {
-      extend: {
-        colors: {
-          'lime-green': '#3bbe5d', // A sua cor verde do Figma
-        },
+  // O 'theme' fica no nível principal
+  theme: {
+    extend: {
+      colors: {
+        'lime-green': '#3bbe5d', // A sua cor verde
       },
     },
-    plugins: [],
   },
 
-} satisfies Config; // 'satisfies Config' é a nova forma de tipagem
+  // O 'plugins' também fica no nível principal
+  plugins: [],
+
+};
+
+export default config;
