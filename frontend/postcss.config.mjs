@@ -1,7 +1,7 @@
+// Caminho: frontend/postcss.config.mjs
 const config = {
   plugins: {
-    "@tailwindcss/postcss": {},
+    '@tailwindcss/postcss': {}, // Esta é a sintaxe correta para v4
   },
 };
-
 export default config;
