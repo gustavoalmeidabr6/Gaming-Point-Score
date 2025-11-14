@@ -1,25 +1,30 @@
 // Caminho: frontend/tailwind.config.ts
 import type { Config } from 'tailwindcss';
+import { fontFamily } from 'tailwindcss/defaultTheme'; 
 
-// Esta é a sintaxe correta para o Tailwind v3
 const config: Config = {
   
-  // O 'content' fica aqui
   content: [
     './app/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   
-  // O 'theme' fica no nível principal
   theme: {
     extend: {
+      // --- É ISTO QUE CORRIGE A FONTE ---
+      fontFamily: {
+        sans: ['var(--font-inter)', ...fontFamily.sans],
+        // 1. MUDÁMOS DE 'jersey' PARA 'pixel' e apontámos para a nova variável
+        pixel: ['var(--font-pixel)', 'sans-serif'],
+      },
+      // --- FIM DA CORREÇÃO ---
+
       colors: {
-        'lime-green': '#3bbe5d', // A sua cor verde
+        'lime-green': '#3bbe5d', 
       },
     },
   },
 
-  // O 'plugins' também fica no nível principal
   plugins: [],
 
 };
