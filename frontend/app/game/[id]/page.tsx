@@ -205,10 +205,10 @@ export default function GameReviewPage() {
     // Fundo preto (O seu código, sem mudanças)
     <main className="min-h-screen bg-black text-white p-6 md:p-12 font-sans">
       
-      {/* --- MUDANÇA: BALÃO MENOR AINDA --- */}
-      {/* Mudei max-w-5xl para max-w-4xl */}
+      {/* --- MUDANÇA #1: BALÃO MENOR --- */}
+      {/* Mudei max-w-[1200px] para max-w-5xl */}
       <div className="relative border border-lime-400 p-4 md:p-8 lg:p-12 rounded-lg 
-                      max-w-4xl mx-auto bg-[#1a1c1f] shadow-lg">
+                      max-w-5xl mx-auto bg-[#1a1c1f] shadow-lg">
         
         {/* Detalhes do jogo (Sem mudanças) */}
         <div className="flex flex-col md:flex-row gap-8 mb-8">
@@ -222,7 +222,8 @@ export default function GameReviewPage() {
             </p>
           </div>
           
-          {/* Foto do jogo 16:9 (O seu código, sem mudanças) */}
+          {/* --- MUDANÇA #2: FOTO DO JOGO MENOR --- */}
+          {/* Mudei width={600} height={350} para width={1600} height={900} (16:9) */}
           <div className="md:w-1/2 flex justify-center items-center">
             <Image 
               src={game.image.medium_url} 
@@ -239,12 +240,14 @@ export default function GameReviewPage() {
         {/* SECÇÃO DE REVIEW (OS GRÁFICOS) */}
         <div className="flex flex-col lg:flex-row items-center justify-between gap-10">
           
-          {/* Mini Gráficos (O seu código, sem mudanças) */}
+          {/* --- MUDANÇA #3: MINI GRÁFICOS MENORES --- */}
+          {/* Mudei gap-y-10 para gap-y-8 */}
           <div className="w-full lg:w-1/2 grid grid-cols-2 gap-x-8 gap-y-8">
             {(Object.keys(review) as Array<keyof ReviewForm>).map((key) => (
               
-              <div key={key} className="flex flex-col items-center gap-2">
+              <div key={key} className="flex flex-col items-center gap-2"> {/* Mudei gap-3 para gap-2 */}
                 
+                {/* Mudei size={100} para size={80} e strokeWidth={10} para strokeWidth={8} */}
                 <div className="relative flex items-center justify-center" style={{ width: 80, height: 80 }}>
                   <CircularProgress 
                     value={review[key]} 
@@ -277,9 +280,10 @@ export default function GameReviewPage() {
             ))}
           </div>
 
-          {/* Gráfico Geral (O seu código, sem mudanças) */}
+          {/* --- MUDANÇA #4: GRÁFICO GERAL MENOR --- */}
           <div className="w-full lg:w-1/2 flex flex-col items-center justify-center mt-10 lg:mt-0">
             <div className="relative flex items-center justify-center mb-8">
+              {/* Mudei size={200} para size={160} e strokeWidth={15} para strokeWidth={12} */}
               <CircularProgress 
                 value={averageScore || 0} 
                 max={10} 
@@ -288,6 +292,7 @@ export default function GameReviewPage() {
                 color="#84CC16" 
               />
               <div className="absolute flex flex-col items-center justify-center">
+                {/* Mudei text-7xl para text-6xl */}
                 <span className="text-6xl font-pixel text-lime-400">
                   {averageScore !== null ? averageScore.toFixed(1) : 'N/A'}
                 </span>
