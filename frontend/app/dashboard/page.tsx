@@ -1,7 +1,7 @@
 // Caminho do arquivo: frontend/app/dashboard/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react'; // Adicionámos o 'useEffect'
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
 // --- COMPONENTE DO HEADER (O seu código, sem mudanças) ---
@@ -70,21 +70,21 @@ function DashboardHeader() {
 }
 
 
-// --- TIPOS (Reintroduzidos e Corrigidos) ---
+// --- TIPOS (O seu código, sem mudanças) ---
 type GameSearchResult = {
   id: number;
   name: string;
   image: { 
     thumb_url: string | null;
-    medium_url: string | null; // A API agora envia isto
+    medium_url: string | null; 
   };
 };
 
 type GameDetails = {
   id: number; 
   name: string;
-  deck: string; // A descrição
-  image: { medium_url: string; }; // A foto principal
+  deck: string; 
+  image: { medium_url: string; }; 
 };
 
 type ReviewForm = {
@@ -104,20 +104,17 @@ const defaultReviewState = {
 };
 
 
-// --- PÁGINA PRINCIPAL DO DASHBOARD ---
+// --- PÁGINA PRINCIPAL DO DASHBOARD (O seu código, sem mudanças) ---
 export default function DashboardPage() {
   const [query, setQuery] = useState(''); 
   const [isSearchLoading, setIsSearchLoading] = useState(false);
   const [results, setResults] = useState<GameSearchResult[]>([]);
-
-  // --- LÓGICA ADICIONADA ---
   const [selectedGame, setSelectedGame] = useState<GameDetails | null>(null);
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
   const [review, setReview] = useState<ReviewForm>(defaultReviewState);
   const [reviewStatus, setReviewStatus] = useState(''); 
   const [averageScore, setAverageScore] = useState<number | null>(null);
 
-  // useEffect para carregar o review salvo
   useEffect(() => {
     if (!selectedGame) return; 
 
@@ -150,18 +147,16 @@ export default function DashboardPage() {
   }, [selectedGame]); 
 
   
-  // Função para o <form> (para o "Enter" funcionar)
   const handleSearchWrapper = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); 
     handleSearch();     
   };
 
-  // A sua função de busca (Atualizada para fechar o review)
   const handleSearch = async () => {
     if (!query) return; 
     setIsSearchLoading(true);
     setResults([]); 
-    setSelectedGame(null); // Fecha a vista de detalhes
+    setSelectedGame(null); 
     
     try {
       const response = await fetch(`/api/search?q=${query}`);
@@ -177,8 +172,6 @@ export default function DashboardPage() {
     setIsSearchLoading(false); 
   };
 
-  // --- LÓGICA ADICIONADA ---
-  // Função para clicar no card
   const handleGameClick = async (gameId: number) => {
     setIsDetailsLoading(true);
     setResults([]); 
@@ -198,13 +191,11 @@ export default function DashboardPage() {
     setIsDetailsLoading(false);
   };
 
-  // Função para o botão "Voltar"
   const handleBackToSearch = () => {
     setSelectedGame(null);
     setQuery(''); 
   };
   
-  // Funções para os sliders e salvar
   const handleReviewChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const updatedReview = { ...review, [name]: Number(value) };
@@ -242,8 +233,6 @@ export default function DashboardPage() {
       setReviewStatus('Falha ao salvar review.');
     }
   };
-  // --- FIM DA LÓGICA ADICIONADA ---
-
 
   return (
     // Divisão #1 (Área da Pesquisa)
@@ -251,8 +240,6 @@ export default function DashboardPage() {
       
       <DashboardHeader />
       
-      {/* --- MUDANÇA: 'div' do 'selectedGame' --- */}
-      {/* Se um jogo estiver selecionado, escondemos a barra de pesquisa */}
       <div className={`w-full bg-[#1E2024] border-b border-gray-700 ${selectedGame ? 'hidden' : ''}`}>
         <div className="mx-auto max-w-8xl px-4 pt-10 pb-10 sm:px-6 lg:px-10">
           <div className="flex items-center gap-0">
@@ -266,7 +253,6 @@ export default function DashboardPage() {
               </svg>
             </button>
             
-            {/* --- MUDANÇA: Adicionado 'onSubmit' --- */}
             <form className="flex-grow max-w-lg mx-auto" onSubmit={handleSearchWrapper}>
               <div className="relative">
                 <input 
@@ -302,8 +288,6 @@ export default function DashboardPage() {
           
           <div className="h-px bg-gray-600/50 my-10 border-none"></div>
 
-          {/* --- MUDANÇA: RENDERIZAÇÃO CONDICIONAL --- */}
-          
           {/* SE O JOGO NÃO ESTIVER SELECIONADO, MOSTRAR A BUSCA */}
           {!selectedGame && (
             <section>
@@ -322,7 +306,7 @@ export default function DashboardPage() {
                   results.map((game) => (
                     <div 
                       key={game.id} 
-                      onClick={() => handleGameClick(game.id)} // ADICIONADO CLICK
+                      onClick={() => handleGameClick(game.id)}
                       className="
                         cursor-pointer rounded-xl bg-[#2A2D32] shadow-lg 
                         border border-gray-700/50
@@ -330,7 +314,6 @@ export default function DashboardPage() {
                       "
                     >
                       <div className="aspect-[4/3] w-full rounded-t-xl bg-[#393D44] flex items-center justify-center overflow-hidden">
-                        {/* USAR IMAGEM DE ALTA QUALIDADE */}
                         {game.image && (game.image.medium_url || game.image.thumb_url) ? (
                           <Image
                             src={game.image.medium_url || game.image.thumb_url!}
@@ -402,6 +385,7 @@ export default function DashboardPage() {
                     {selectedGame.deck}
                   </p>
                   
+                  {/* --- MUDANÇA AQUI: NOVO PAINEL DE REVIEW --- */}
                   <div className="rounded-lg bg-gray-900 border border-gray-700 p-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-xl font-semibold text-white font-pixel">Meu Review</h3>
@@ -414,17 +398,38 @@ export default function DashboardPage() {
                     
                     <hr className="my-3 border-gray-700" />
                     
+                    {/* Aqui está o seu NOVO "gráfico de barras" animado */}
                     {(Object.keys(review) as Array<keyof ReviewForm>).map((key) => (
-                      <div key={key} className="mb-3">
-                        <label className="mb-1 block text-sm capitalize text-gray-300 font-sans">
+                      <div key={key} className="mb-4"> {/* Aumentei a margem */}
+                        <label className="mb-2 block text-sm capitalize text-gray-300 font-sans">
                           {key}: <span className="font-bold text-white">{review[key]}</span>
                         </label>
-                        <input
-                          type="range" name={key} min="0" max="10" step="0.5"
-                          value={review[key]} 
-                          onChange={handleReviewChange}
-                          className="w-full accent-lime-400"
-                        />
+                        
+                        {/* Este 'div' cria o "gráfico" bonito */}
+                        <div className="relative h-5 w-full">
+                          {/* Camada 1: O fundo (a barra vazia) */}
+                          <div className="absolute top-1/2 -translate-y-1/2 w-full h-2 bg-gray-700 rounded-full"></div>
+                          
+                          {/* Camada 2: O preenchimento (a barra verde) */}
+                          <div 
+                            className="absolute top-1/2 -translate-y-1/2 h-2 bg-lime-400 rounded-full transition-all duration-150"
+                            // A 'width' é calculada: (valor / maximo) * 100%
+                            style={{ width: `${review[key] * 10}%` }} 
+                          ></div>
+                          
+                          {/* Camada 3: O slider real (invisível mas funcional) */}
+                          <input
+                            type="range" 
+                            name={key} 
+                            min="0" 
+                            max="10" 
+                            step="0.5"
+                            value={review[key]} 
+                            onChange={handleReviewChange}
+                            // Classes para torná-lo invisível mas funcional
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          />
+                        </div>
                       </div>
                     ))}
                     
@@ -438,6 +443,8 @@ export default function DashboardPage() {
                       {reviewStatus}
                     </p>
                   </div>
+                  {/* --- FIM DA MUDANÇA --- */}
+
                 </div>
               </div>
             </section>
