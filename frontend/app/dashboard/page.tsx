@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 
-// --- COMPONENTE DO HEADER (COM AS SUAS ALTERAÇÕES) ---
+// --- COMPONENTE DO HEADER ---
 function DashboardHeader() {
   return (
     <header className="relative w-full h-64"> 
@@ -16,6 +16,7 @@ function DashboardHeader() {
         className="object-cover z-0"
       />
       
+      {/* "Pod" flutuante (posição baixa) */}
       <div className="absolute z-20 inset-0 flex items-center justify-center pt-40">
         
         {/* O seu pod de 600px */}
@@ -73,17 +74,38 @@ function DashboardHeader() {
   );
 }
 
+// --- TIPO PARA OS RESULTADOS DA BUSCA (Sem mudanças) ---
+type GameSearchResult = {
+  id: number;
+  name: string;
+  image: { thumb_url: string | null }; 
+};
+
 
 // --- PÁGINA PRINCIPAL DO DASHBOARD ---
 export default function DashboardPage() {
   const [query, setQuery] = useState(''); 
   const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [results, setResults] = useState<GameSearchResult[]>([]);
 
+  // --- FUNÇÃO DE BUSCA (Sem mudanças) ---
   const handleSearch = async () => {
-    if (!query) return;
+    if (!query) return; 
     setIsSearchLoading(true);
-    console.log("Buscando por:", query);
-    setIsSearchLoading(false);
+    setResults([]); 
+    
+    try {
+      const response = await fetch(`/api/search?q=${query}`);
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setResults(data);
+      } else {
+        console.error("A API não retornou um array:", data);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar dados da API:", error);
+    }
+    setIsSearchLoading(false); 
   };
 
   return (
@@ -92,16 +114,13 @@ export default function DashboardPage() {
       
       <DashboardHeader />
       
-      {/* --- MUDANÇA #1: O "RETANGULO" COM TRAÇADO CINZA ---
-          Adicionei o 'border-b border-gray-700' que você pediu
-      */}
       <div className="w-full bg-[#1E2024] border-b border-gray-700">
         <div className="mx-auto max-w-8xl px-4 pt-10 pb-10 sm:px-6 lg:px-10">
           <div className="flex items-center gap-0">
             
             <button className="
-              p-2 rounded-md text-white
-              hover:bg-white/10 transition-colors
+              p-2 rounded-md text-lime-green
+              hover:bg-lime-green/10 transition-colors
             ">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -110,19 +129,16 @@ export default function DashboardPage() {
             
             <section className="flex-grow max-w-lg mx-auto">
               <div className="relative">
-                {/* --- MUDANÇA #2: O BUG 'e.g.value' FOI CORRIGIDO --- */}
                 <input 
                   type="text" 
                   value={query} 
                   onChange={(e) => setQuery(e.target.value)} 
                   placeholder="PESQUISAR JOGOS..." 
                   className="
-                    w-full rounded-full 
-                    border border-gray-700
+                    w-full rounded-full border border-gray-700
                     bg-[#2A2D32] px-6 py-3 
                     font-pixel tracking-wider text-white placeholder-gray-500
                     focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
-                  // --- MUDANÇA #3: Borda verde trocada para 'border-gray-700' ---
                 />
                 <button 
                   onClick={handleSearch}
@@ -140,33 +156,70 @@ export default function DashboardPage() {
         </div>
       </div>
       
-      {/* Divisão #2 (Jogos) */}
-      <div className="w-full bg-gray-900">
-        <div className="mx-auto max-w-6xl px-4 pt-10 pb-20 sm:px-6 lg:px-8">
+      {/* --- CORREÇÃO #1: Mudei 'bg-gray-1000' para 'bg-gray-900' --- */}
+      <div className="w-full bg-gray-900 mt-10"> 
+        <div className="mx-auto max-w-6xl px-4 pt-0 pb-20 sm:px-6 lg:px-8">
           
+          {/* --- CORREÇÃO #2: Mudei 'bg-gray-1100/50' para 'bg-gray-600/50' --- */}
           <div className="h-px bg-gray-600/50 my-10 border-none"></div>
 
           <section>
             <h2 className="mb-6 text-3xl font-bold text-white font-pixel tracking-wider">
-              JOGOS RELEVANTES
+              {results.length > 0 ? 'RESULTADOS DA BUSCA' : 'JOGOS RELEVANTES'}
             </h2>
+            
             <div className="grid grid-cols-4 gap-8 md:grid-cols-4">
-              {[...Array(8)].map((_, i) => (
-                <div 
-                  key={i} 
-                  className="
-                    cursor-pointer rounded-xl bg-[#2A2D32] shadow-lg 
-                    border border-gray-700/50
-                    transition-all duration-300 hover:border-lime-400/50 hover:scale-105
-                  "
-                >
-                  <div className="aspect-[4/3] w-full rounded-t-xl bg-[#393D44] flex items-center justify-center">
+              
+              {isSearchLoading && (
+                <p className="col-span-4 text-center font-sans">Buscando...</p>
+              )}
+
+              {!isSearchLoading && results.length > 0 && (
+                results.map((game) => (
+                  <div 
+                    key={game.id} 
+                    className="
+                      cursor-pointer rounded-xl bg-[#2A2D32] shadow-lg 
+                      border border-gray-700/50
+                      transition-all duration-300 hover:border-lime-400/50 hover:scale-105
+                    "
+                  >
+                    <div className="aspect-[4/3] w-full rounded-t-xl bg-[#393D44] flex items-center justify-center">
+                      {game.image && game.image.thumb_url && (
+                        <Image
+                          src={game.image.thumb_url}
+                          alt={game.name}
+                          width={300}
+                          height={225}
+                          className="w-full h-full object-cover rounded-t-xl"
+                        />
+                      )}
+                    </div>
+                    <h3 className="p-3 font-sans text-sm font-semibold text-white truncate">
+                      {game.name}
+                    </h3>
                   </div>
-                  <h3 className="p-3 font-sans text-sm font-semibold text-white truncate">
-                    Dragon's Crest: Age of Valor
-                  </h3>
-                </div>
-              ))}
+                ))
+              )}
+
+              {!isSearchLoading && results.length === 0 && (
+                [...Array(8)].map((_, i) => (
+                  <div 
+                    key={i} 
+                    className="
+                      cursor-pointer rounded-xl bg-[#2A2D32] shadow-lg 
+                      border border-gray-700/50
+                      transition-all duration-300 hover:border-lime-400/50 hover:scale-105
+                    "
+                  >
+                    <div className="aspect-[4/3] w-full rounded-t-xl bg-[#393D44] flex items-center justify-center">
+                    </div>
+                    <h3 className="p-3 font-sans text-sm font-semibold text-white truncate">
+                      Dragon&apos;s Crest: Age of Valor
+                    </h3>
+                  </div>
+                ))
+              )}
             </div>
           </section>
         </div>
