@@ -4,10 +4,10 @@
 import { useState } from 'react';
 import Image from 'next/image';
 
-// --- COMPONENTE DO HEADER ---
+// --- COMPONENTE DO HEADER (Não mudei nada aqui) ---
 function DashboardHeader() {
   return (
-    <header className="relative w-full h-64"> 
+    <header className="relative w-full h-68"> 
       
       <Image
         src="/images/dashboard-banner.jpg" //
@@ -16,13 +16,10 @@ function DashboardHeader() {
         className="object-cover z-0"
       />
       
-      {/* "Pod" flutuante (posição baixa) */}
-      <div className="absolute z-20 inset-0 flex items-center justify-center pt-40">
+      <div className="absolute z-20 inset-0 flex items-center justify-center pt-44">
         
-        {/* O seu pod de 600px */}
         <div className="relative w-[600px] h-[140px]">
           
-          {/* CAMADA 1: O AVATAR (z-20 - Fica atrás) */}
           <div className="
             absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
             w-[100px] h-[100px] rounded-full z-20 
@@ -36,7 +33,6 @@ function DashboardHeader() {
             />
           </div>
 
-          {/* CAMADA 2: A IMAGEM-BASE DO POD (z-30 - Fica na frente) */}
           <Image
             src="/images/pod-background.png" //
             alt="Fundo do perfil"
@@ -45,7 +41,6 @@ function DashboardHeader() {
             className="z-30"
           />
 
-          {/* CAMADA 3: O TEXTO (z-40 - Fica na frente de tudo) */}
           <div className="absolute inset-0 z-40">
             
             <div className="absolute left-[3.5rem] top-1/2 -translate-y-1/2 flex items-center gap-3">
@@ -74,17 +69,46 @@ function DashboardHeader() {
   );
 }
 
+// --- MUDANÇA #1: TIPO PARA OS RESULTADOS DA BUSCA ---
+// (Isto ajuda o TypeScript a saber o que esperar da API)
+type GameSearchResult = {
+  id: number;
+  name: string;
+  image: { thumb_url: string | null }; // A imagem pode ser nula
+};
+
 
 // --- PÁGINA PRINCIPAL DO DASHBOARD ---
 export default function DashboardPage() {
   const [query, setQuery] = useState(''); 
   const [isSearchLoading, setIsSearchLoading] = useState(false);
 
+  // --- MUDANÇA #2: NOVO ESTADO PARA GUARDAR OS RESULTADOS ---
+  const [results, setResults] = useState<GameSearchResult[]>([]);
+
+  // --- MUDANÇA #3: FUNÇÃO DE BUSCA ATUALIZADA ---
   const handleSearch = async () => {
-    if (!query) return;
+    if (!query) return; // Não busca se o campo estiver vazio
+
     setIsSearchLoading(true);
-    console.log("Buscando por:", query);
-    setIsSearchLoading(false);
+    setResults([]); // Limpa os resultados antigos
+    
+    try {
+      // 1. Chama a sua API (que está na Vercel)
+      const response = await fetch(`/api/search?q=${query}`);
+      const data = await response.json();
+
+      // 2. Verifica se a API retornou um array e atualiza o estado
+      if (Array.isArray(data)) {
+        setResults(data);
+      } else {
+        console.error("A API não retornou um array:", data);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar dados da API:", error);
+    }
+
+    setIsSearchLoading(false); // Termina o carregamento
   };
 
   return (
@@ -142,27 +166,70 @@ export default function DashboardPage() {
           <div className="h-px bg-gray-600/50 my-10 border-none"></div>
 
           <section>
+            {/* --- MUDANÇA #4: TÍTULO DINÂMICO --- */}
             <h2 className="mb-6 text-3xl font-bold text-white font-pixel tracking-wider">
-              JOGOS RELEVANTES
+              {/* Se houver resultados, mostre "Resultados", senão, "Jogos Relevantes" */}
+              {results.length > 0 ? 'RESULTADOS DA BUSCA' : 'JOGOS RELEVANTES'}
             </h2>
+            
+            {/* --- MUDANÇA #5: GRID DINÂMICA --- */}
             <div className="grid grid-cols-4 gap-8 md:grid-cols-4">
-              {[...Array(8)].map((_, i) => (
-                <div 
-                  key={i} 
-                  className="
-                    cursor-pointer rounded-xl bg-[#2A2D32] shadow-lg 
-                    border border-gray-700/50
-                    transition-all duration-300 hover:border-lime-400/50 hover:scale-105
-                  "
-                >
-                  <div className="aspect-[4/3] w-full rounded-t-xl bg-[#393D44] flex items-center justify-center">
+              
+              {/* Mostra 'Buscando...' enquanto a API responde */}
+              {isSearchLoading && (
+                <p className="col-span-4 text-center font-sans">Buscando...</p>
+              )}
+
+              {/* Se NÃO estiver buscando E houver resultados, mostre-os */}
+              {!isSearchLoading && results.length > 0 && (
+                results.map((game) => (
+                  <div 
+                    key={game.id} 
+                    className="
+                      cursor-pointer rounded-xl bg-[#2A2D32] shadow-lg 
+                      border border-gray-700/50
+                      transition-all duration-300 hover:border-lime-400/50 hover:scale-105
+                    "
+                  >
+                    <div className="aspect-[4/3] w-full rounded-t-xl bg-[#393D44] flex items-center justify-center">
+                      {/* Mostra a imagem do jogo se ela existir */}
+                      {game.image && game.image.thumb_url && (
+                        <Image
+                          src={game.image.thumb_url}
+                          alt={game.name}
+                          width={300}
+                          height={225}
+                          className="w-full h-full object-cover rounded-t-xl"
+                        />
+                      )}
+                    </div>
+                    <h3 className="p-3 font-sans text-sm font-semibold text-white truncate">
+                      {game.name}
+                    </h3>
                   </div>
-                  <h3 className="p-3 font-sans text-sm font-semibold text-white truncate">
-                    {/* --- CORREÇÃO AQUI --- */}
-                    Dragon&apos;s Crest: Age of Valor
-                  </h3>
-                </div>
-              ))}
+                ))
+              )}
+
+              {/* Se NÃO estiver buscando E NÃO houver resultados, mostre os placeholders */}
+              {!isSearchLoading && results.length === 0 && (
+                [...Array(8)].map((_, i) => (
+                  <div 
+                    key={i} 
+                    className="
+                      cursor-pointer rounded-xl bg-[#2A2D32] shadow-lg 
+                      border border-gray-700/50
+                      transition-all duration-300 hover:border-lime-400/50 hover:scale-105
+                    "
+                  >
+                    <div className="aspect-[4/3] w-full rounded-t-xl bg-[#393D44] flex items-center justify-center">
+                    </div>
+                    <h3 className="p-3 font-sans text-sm font-semibold text-white truncate">
+                      {/* Corrigi o apóstrofo para o build da Vercel não falhar */}
+                      Dragon&apos;s Crest: Age of Valor
+                    </h3>
+                  </div>
+                ))
+              )}
             </div>
           </section>
         </div>
