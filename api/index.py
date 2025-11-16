@@ -200,9 +200,9 @@ def get_api_key():
 
 @app.get("/api/search")
 def search_games(q: str | None = None, api_key: str = Depends(get_api_key)):
-    # (código da busca - sem mudanças)
     if not q: return {"error": "Nenhum termo de busca fornecido"}
     url = "https://www.giantbomb.com/api/search/"
+    # --- MUDANÇA AQUI: Adicionámos 'field_list' para pedir o objeto 'image' ---
     params = {'api_key': api_key, 'format': 'json', 'query': q, 'resources': 'game', 'limit': 10, 'field_list': 'id,name,image'}
     headers = { 'User-Agent': 'MeuPerfilGamerApp' }
     try:
