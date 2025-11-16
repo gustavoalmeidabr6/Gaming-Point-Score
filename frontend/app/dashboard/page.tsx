@@ -4,18 +4,22 @@
 import { useState, useEffect } from 'react'; // Adicionámos o 'useEffect'
 import Image from 'next/image';
 
-// --- COMPONENTE DO HEADER (Sem mudanças) ---
+// --- COMPONENTE DO HEADER (O seu código, sem mudanças) ---
 function DashboardHeader() {
   return (
-    <header className="relative w-full h-68"> 
+    <header className="relative w-full h-64"> 
+      
       <Image
         src="/images/dashboard-banner.jpg" //
         alt="Banner do perfil"
         fill
         className="object-cover z-0"
       />
-      <div className="absolute z-20 inset-0 flex items-center justify-center pt-44">
+      
+      <div className="absolute z-20 inset-0 flex items-center justify-center pt-40">
+        
         <div className="relative w-[600px] h-[140px]">
+          
           <div className="
             absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
             w-[100px] h-[100px] rounded-full z-20 
@@ -28,6 +32,7 @@ function DashboardHeader() {
               className="rounded-full object-cover"
             />
           </div>
+
           <Image
             src="/images/pod-background.png" //
             alt="Fundo do perfil"
@@ -35,7 +40,9 @@ function DashboardHeader() {
             objectFit="contain"
             className="z-30"
           />
+
           <div className="absolute inset-0 z-40">
+            
             <div className="absolute left-[3.5rem] top-1/2 -translate-y-1/2 flex items-center gap-3">
               <div className="
                 flex h-12 w-12 items-center justify-center 
@@ -49,6 +56,7 @@ function DashboardHeader() {
                 <p className="font-sans text-xs text-gray-400">Próximo nível: 208 XP</p>
               </div>
             </div>
+
             <div className="absolute right-[5.5rem] top-1/2 -translate-y-1/2">
               <h1 className="font-pixel text-3xl font-bold text-white">
                 NOME
@@ -61,23 +69,24 @@ function DashboardHeader() {
   );
 }
 
-// --- NOVOS TIPOS (Reintroduzidos) ---
+
+// --- TIPOS (Reintroduzidos e Corrigidos) ---
 type GameSearchResult = {
   id: number;
   name: string;
   image: { 
     thumb_url: string | null;
-    medium_url: string | null;
+    medium_url: string | null; // A API agora envia isto
   };
 };
-// Este é para os Detalhes do Jogo (quando clicado)
+
 type GameDetails = {
   id: number; 
   name: string;
   deck: string; // A descrição
   image: { medium_url: string; }; // A foto principal
 };
-// Este é para o formulário de review
+
 type ReviewForm = {
   jogabilidade: number;
   graficos: number;
@@ -85,7 +94,7 @@ type ReviewForm = {
   audio: number;
   desempenho: number;
 };
-// Estado padrão do review
+
 const defaultReviewState = {
   jogabilidade: 5,
   graficos: 5,
@@ -101,34 +110,28 @@ export default function DashboardPage() {
   const [isSearchLoading, setIsSearchLoading] = useState(false);
   const [results, setResults] = useState<GameSearchResult[]>([]);
 
-  // --- NOVOS ESTADOS (Reintroduzidos) ---
+  // --- LÓGICA ADICIONADA ---
   const [selectedGame, setSelectedGame] = useState<GameDetails | null>(null);
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
   const [review, setReview] = useState<ReviewForm>(defaultReviewState);
   const [reviewStatus, setReviewStatus] = useState(''); 
   const [averageScore, setAverageScore] = useState<number | null>(null);
 
-  
-  // --- NOVO 'useEffect' (Para carregar um review salvo) ---
-  // Roda sempre que um 'selectedGame' muda
+  // useEffect para carregar o review salvo
   useEffect(() => {
-    if (!selectedGame) return; // Se não há jogo, não faz nada
+    if (!selectedGame) return; 
 
     const fetchReview = async () => {
       setReviewStatus('Carregando seu review...');
       try {
-        // Busca um review EXISTENTE no seu banco de dados
-        // (owner_id=1 é o nosso usuário de teste)
         const res = await fetch(`/api/review?game_id=${selectedGame.id}&owner_id=1`);
         const data = await res.json();
         
         if (data.error) {
-          // Se não achou review, usa o estado padrão
           setReview(defaultReviewState);
-          setAverageScore(5.0); // Média de 5
+          setAverageScore(5.0); 
           setReviewStatus('Seja o primeiro a avaliar!');
         } else {
-          // Se achou, preenche o formulário
           setReview({
             jogabilidade: data.jogabilidade,
             graficos: data.graficos,
@@ -144,20 +147,21 @@ export default function DashboardPage() {
       }
     };
     fetchReview();
-  }, [selectedGame]); // Dependência: Roda quando 'selectedGame' muda
+  }, [selectedGame]); 
 
-
-  // --- FUNÇÕES DE BUSCA (ATUALIZADAS) ---
+  
+  // Função para o <form> (para o "Enter" funcionar)
   const handleSearchWrapper = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); 
     handleSearch();     
   };
 
+  // A sua função de busca (Atualizada para fechar o review)
   const handleSearch = async () => {
     if (!query) return; 
     setIsSearchLoading(true);
     setResults([]); 
-    setSelectedGame(null); // Fecha a vista de detalhes se estiver aberta
+    setSelectedGame(null); // Fecha a vista de detalhes
     
     try {
       const response = await fetch(`/api/search?q=${query}`);
@@ -173,10 +177,11 @@ export default function DashboardPage() {
     setIsSearchLoading(false); 
   };
 
-  // --- NOVA FUNÇÃO (Quando você clica num Card) ---
+  // --- LÓGICA ADICIONADA ---
+  // Função para clicar no card
   const handleGameClick = async (gameId: number) => {
     setIsDetailsLoading(true);
-    setResults([]); // Limpa os resultados da busca
+    setResults([]); 
     setReviewStatus('');
     setReview(defaultReviewState); 
     setAverageScore(null); 
@@ -185,7 +190,7 @@ export default function DashboardPage() {
       const res = await fetch(`/api/game/${gameId}`);
       const data = await res.json();
       if (data && data.name) {
-        setSelectedGame(data); // Define o jogo selecionado!
+        setSelectedGame(data); 
       }
     } catch (error) {
       console.error("Erro ao buscar detalhes do jogo:", error);
@@ -193,19 +198,18 @@ export default function DashboardPage() {
     setIsDetailsLoading(false);
   };
 
-  // --- NOVA FUNÇÃO (Para voltar para a busca) ---
+  // Função para o botão "Voltar"
   const handleBackToSearch = () => {
     setSelectedGame(null);
-    setQuery(''); // Limpa a busca
+    setQuery(''); 
   };
   
-  // --- NOVAS FUNÇÕES DE REVIEW (Reintroduzidas) ---
+  // Funções para os sliders e salvar
   const handleReviewChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const updatedReview = { ...review, [name]: Number(value) };
     setReview(updatedReview);
     
-    // Calcula a média em tempo real
     const scores = Object.values(updatedReview);
     const newAverage = scores.reduce((a, b) => a + b, 0) / scores.length;
     setAverageScore(newAverage);
@@ -219,7 +223,7 @@ export default function DashboardPage() {
       ...review, 
       game_id: selectedGame.id, 
       game_name: selectedGame.name, 
-      owner_id: 1 // "Chumbado" para o usuário de teste 1
+      owner_id: 1 
     };
     
     try {
@@ -238,6 +242,7 @@ export default function DashboardPage() {
       setReviewStatus('Falha ao salvar review.');
     }
   };
+  // --- FIM DA LÓGICA ADICIONADA ---
 
 
   return (
@@ -246,17 +251,22 @@ export default function DashboardPage() {
       
       <DashboardHeader />
       
-      {/* Container da Divisão #1 */}
-      <div className="w-full bg-[#1E2024] border-b border-gray-700">
+      {/* --- MUDANÇA: 'div' do 'selectedGame' --- */}
+      {/* Se um jogo estiver selecionado, escondemos a barra de pesquisa */}
+      <div className={`w-full bg-[#1E2024] border-b border-gray-700 ${selectedGame ? 'hidden' : ''}`}>
         <div className="mx-auto max-w-8xl px-4 pt-10 pb-10 sm:px-6 lg:px-10">
           <div className="flex items-center gap-0">
             
-            <button className="p-2 rounded-md text-lime-green hover:bg-lime-green/10 transition-colors">
+            <button className="
+              p-2 rounded-md text-lime-green
+              hover:bg-lime-green/10 transition-colors
+            ">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
               </svg>
             </button>
             
+            {/* --- MUDANÇA: Adicionado 'onSubmit' --- */}
             <form className="flex-grow max-w-lg mx-auto" onSubmit={handleSearchWrapper}>
               <div className="relative">
                 <input 
@@ -292,8 +302,9 @@ export default function DashboardPage() {
           
           <div className="h-px bg-gray-600/50 my-10 border-none"></div>
 
-          {/* --- MUDANÇA #5: RENDERIZAÇÃO CONDICIONAL --- */}
-          {/* Se um jogo NÃO está selecionado, mostre a busca/relevantes */}
+          {/* --- MUDANÇA: RENDERIZAÇÃO CONDICIONAL --- */}
+          
+          {/* SE O JOGO NÃO ESTIVER SELECIONADO, MOSTRAR A BUSCA */}
           {!selectedGame && (
             <section>
               <h2 className="mb-6 text-3xl font-bold text-white font-pixel tracking-wider">
@@ -311,8 +322,7 @@ export default function DashboardPage() {
                   results.map((game) => (
                     <div 
                       key={game.id} 
-                      // --- AQUI A MÁGICA ACONTECE ---
-                      onClick={() => handleGameClick(game.id)}
+                      onClick={() => handleGameClick(game.id)} // ADICIONADO CLICK
                       className="
                         cursor-pointer rounded-xl bg-[#2A2D32] shadow-lg 
                         border border-gray-700/50
@@ -320,6 +330,7 @@ export default function DashboardPage() {
                       "
                     >
                       <div className="aspect-[4/3] w-full rounded-t-xl bg-[#393D44] flex items-center justify-center overflow-hidden">
+                        {/* USAR IMAGEM DE ALTA QUALIDADE */}
                         {game.image && (game.image.medium_url || game.image.thumb_url) ? (
                           <Image
                             src={game.image.medium_url || game.image.thumb_url!}
@@ -362,12 +373,13 @@ export default function DashboardPage() {
             </section>
           )}
 
-          {/* Se um jogo ESTÁ selecionado, mostre o painel de review */}
+          {/* SE O JOGO ESTIVER A CARREGAR */}
           {isDetailsLoading && <p className="text-center text-lg text-white">Carregando jogo...</p>}
           
+          {/* SE O JOGO ESTIVER SELECIONADO, MOSTRAR O REVIEW */}
           {selectedGame && !isDetailsLoading && (
             <section className="rounded-xl bg-[#2A2D32] p-6 shadow-lg border border-gray-700/50">
-              {/* Botão Voltar */}
+              
               <button 
                 onClick={handleBackToSearch} 
                 className="mb-4 rounded-md bg-gray-600 px-4 py-2 text-sm text-white transition-all hover:bg-gray-500 font-sans"
@@ -375,9 +387,7 @@ export default function DashboardPage() {
                 &larr; Voltar para a Busca
               </button>
               
-              {/* Layout do Painel de Review */}
               <div className="flex flex-col gap-6 md:flex-row">
-                {/* Coluna da Imagem */}
                 <Image 
                   src={selectedGame.image.medium_url} 
                   alt={selectedGame.name} 
@@ -386,14 +396,12 @@ export default function DashboardPage() {
                   className="w-full rounded-lg md:w-1/2 lg:w-1/3 object-cover" 
                 />
                 
-                {/* Coluna do Review */}
                 <div className="flex-1">
                   <h2 className="mb-2 text-3xl font-bold text-white font-pixel">{selectedGame.name}</h2>
                   <p className="mb-4 text-sm text-gray-400 font-sans">
                     {selectedGame.deck}
                   </p>
                   
-                  {/* Caixa dos Sliders (Gráfico de Barras) */}
                   <div className="rounded-lg bg-gray-900 border border-gray-700 p-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-xl font-semibold text-white font-pixel">Meu Review</h3>
@@ -406,7 +414,6 @@ export default function DashboardPage() {
                     
                     <hr className="my-3 border-gray-700" />
                     
-                    {/* Aqui está o seu "gráfico de barras" animado */}
                     {(Object.keys(review) as Array<keyof ReviewForm>).map((key) => (
                       <div key={key} className="mb-3">
                         <label className="mb-1 block text-sm capitalize text-gray-300 font-sans">
@@ -416,7 +423,6 @@ export default function DashboardPage() {
                           type="range" name={key} min="0" max="10" step="0.5"
                           value={review[key]} 
                           onChange={handleReviewChange}
-                          // A "animação" vem do 'accent-lime-green'
                           className="w-full accent-lime-400"
                         />
                       </div>
