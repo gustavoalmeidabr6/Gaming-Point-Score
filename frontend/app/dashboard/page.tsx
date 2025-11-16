@@ -16,8 +16,8 @@ function DashboardHeader() {
         className="object-cover z-0"
       />
       
-      {/* --- MUDANÇA AQUI: Mudei 'pt-40' para 'pt-44' (desce 16px) --- */}
-      <div className="absolute z-20 inset-0 flex items-center justify-center pt-44">
+      {/* "Pod" flutuante (posição baixa) */}
+      <div className="absolute z-20 inset-0 flex items-center justify-center pt-40">
         
         {/* O seu pod de 600px */}
         <div className="relative w-[600px] h-[140px]">
@@ -97,7 +97,6 @@ export default function DashboardPage() {
         <div className="mx-auto max-w-8xl px-4 pt-10 pb-10 sm:px-6 lg:px-10">
           <div className="flex items-center gap-0">
             
-            {/* Ícone de Menu Verde */}
             <button className="
               p-2 rounded-md text-lime-green
               hover:bg-lime-green/10 transition-colors
@@ -107,7 +106,6 @@ export default function DashboardPage() {
               </svg>
             </button>
             
-            {/* Barra de Pesquisa */}
             <section className="flex-grow max-w-lg mx-auto">
               <div className="relative">
                 <input 
@@ -138,7 +136,7 @@ export default function DashboardPage() {
       </div>
       
       {/* Divisão #2 (Jogos) - Fundo Escuro */}
-      <div className="w-full bg-gray-1000"> 
+      <div className="w-full bg-gray-900">
         <div className="mx-auto max-w-6xl px-4 pt-0 pb-20 sm:px-6 lg:px-8">
           
           <div className="h-px bg-gray-600/50 my-10 border-none"></div>
@@ -160,7 +158,8 @@ export default function DashboardPage() {
                   <div className="aspect-[4/3] w-full rounded-t-xl bg-[#393D44] flex items-center justify-center">
                   </div>
                   <h3 className="p-3 font-sans text-sm font-semibold text-white truncate">
-                    Dragon's Crest: Age of Valor
+                    {/* --- CORREÇÃO AQUI --- */}
+                    Dragon&apos;s Crest: Age of Valor
                   </h3>
                 </div>
               ))}
