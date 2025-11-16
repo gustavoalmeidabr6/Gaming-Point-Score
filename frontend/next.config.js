@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   
-  // --- ADICIONE ISTO ---
+  // --- MUDANÇA AQUI: Autoriza imagens da Giant Bomb ---
   images: {
     remotePatterns: [
       {
@@ -13,7 +13,7 @@ const nextConfig = {
       },
     ],
   },
-  // --- FIM DA ADIÇÃO ---
+  // --- FIM DA MUDANÇA ---
 };
 
 module.exports = nextConfig;
