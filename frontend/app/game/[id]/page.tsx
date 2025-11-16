@@ -1,85 +1,11 @@
-// Caminho do arquivo: frontend/app/dashboard/page.tsx
+// Caminho do arquivo: frontend/app/game/[id]/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react'; // Adicionado useRef para animações
 import Image from 'next/image';
+import { useParams, useRouter } from 'next/navigation';
 
-// --- COMPONENTE DO HEADER (O seu código, sem mudanças) ---
-function DashboardHeader() {
-  return (
-    <header className="relative w-full h-64"> 
-      
-      <Image
-        src="/images/dashboard-banner.jpg" //
-        alt="Banner do perfil"
-        fill
-        className="object-cover z-0"
-      />
-      
-      <div className="absolute z-20 inset-0 flex items-center justify-center pt-40">
-        
-        <div className="relative w-[600px] h-[140px]">
-          
-          <div className="
-            absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-            w-[100px] h-[100px] rounded-full z-20 
-          ">
-            <Image 
-              src="/images/placeholder-avatar.jpg" //
-              alt="Foto de Perfil"
-              width={110} 
-              height={110}
-              className="rounded-full object-cover"
-            />
-          </div>
-
-          <Image
-            src="/images/pod-background.png" //
-            alt="Fundo do perfil"
-            fill
-            objectFit="contain"
-            className="z-30"
-          />
-
-          <div className="absolute inset-0 z-40">
-            
-            <div className="absolute left-[3.5rem] top-1/2 -translate-y-1/2 flex items-center gap-3">
-              <div className="
-                flex h-12 w-12 items-center justify-center 
-                rounded-md bg-lime-900/50 font-pixel text-lg font-bold text-lime-300
-                border border-lime-700
-              ">
-                B2
-              </div>
-              <div>
-                <h2 className="font-pixel text-lg font-bold text-white">BRONZE II</h2>
-                <p className="font-sans text-xs text-gray-400">Próximo nível: 208 XP</p>
-              </div>
-            </div>
-
-            <div className="absolute right-[5.5rem] top-1/2 -translate-y-1/2">
-              <h1 className="font-pixel text-3xl font-bold text-white">
-                NOME
-              </h1>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-}
-
-
-// --- TIPOS (O seu código, sem mudanças) ---
-type GameSearchResult = {
-  id: number;
-  name: string;
-  image: { 
-    thumb_url: string | null;
-    medium_url: string | null; 
-  };
-};
-
+// --- TIPOS ---
 type GameDetails = {
   id: number; 
   name: string;
@@ -103,134 +29,141 @@ const defaultReviewState = {
   desempenho: 5,
 };
 
-
-// --- NOVO COMPONENTE: GRÁFICO CIRCULAR ---
-// Este componente cria os gráficos "lúdicos e bonitos" que você pediu
-function CircularProgress({ value, size = 'small' }: { value: number; size?: 'small' | 'large' }) {
-  const percentage = value * 10; // Converte a nota 0-10 para 0-100%
-  
-  // Define os tamanhos com base na prop 'size'
-  const containerSize = size === 'large' ? 'w-32 h-32' : 'w-20 h-20';
-  const innerSize = size === 'large' ? 'w-28 h-28' : 'w-16 h-16';
-  const textSize = size === 'large' ? "text-3xl" : "text-lg";
+// --- COMPONENTE DO GRÁFICO CIRCULAR (SVG) ---
+// Este componente cria um círculo preenchido com base num valor
+function CircularProgress({ value, max, size = 60, strokeWidth = 8, color = '#84CC16', label }: {
+  value: number;
+  max: number;
+  size?: number;
+  strokeWidth?: number;
+  color?: string;
+  label?: string; // Novo para os rótulos de texto
+}) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (value / max) * circumference;
 
   return (
-    <div className={`relative ${containerSize} rounded-full flex items-center justify-center`}>
-      {/* 1. O Gráfico (Conic Gradient) - Verde (lime-400) e Cinza (gray-700) */}
-      <div 
-        className="w-full h-full rounded-full transition-all duration-300"
-        style={{ 
-          background: `conic-gradient(#a3e635 ${percentage}%, #374151 ${percentage}%)` 
-        }}
-      ></div>
-      
-      {/* 2. O "Buraco" no meio (cor de fundo da caixa de review) */}
-      <div className={`absolute ${innerSize} bg-gray-900 rounded-full`}></div>
-      
-      {/* 3. O Texto (A nota) */}
-      <div className={`absolute font-pixel font-bold ${textSize} text-white`}>
-        {value.toFixed(1)}
-      </div>
+    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg className="transform -rotate-90" width={size} height={size}>
+        {/* Círculo de fundo */}
+        <circle
+          stroke="#4B5563" // Cor do fundo da barra
+          fill="transparent"
+          strokeWidth={strokeWidth}
+          r={radius}
+          cx={size / 2}
+          cy={size / 2}
+        />
+        {/* Círculo de progresso */}
+        <circle
+          stroke={color}
+          fill="transparent"
+          strokeWidth={strokeWidth}
+          r={radius}
+          cx={size / 2}
+          cy={size / 2}
+          style={{
+            strokeDasharray: circumference,
+            strokeDashoffset: offset,
+            transition: 'stroke-dashoffset 0.35s ease-out', // Animação suave
+          }}
+          strokeLinecap="round" // Pontas arredondadas
+        />
+      </svg>
+      {label && (
+        <span className="absolute text-white text-xs font-pixel -mt-2"> {/* Ajuste para centralizar o ícone/label */}
+            {/* Aqui pode ser um ícone ou o label do texto */}
+        </span>
+      )}
     </div>
   );
 }
-// --- FIM DO NOVO COMPONENTE ---
 
 
-// --- PÁGINA PRINCIPAL DO DASHBOARD ---
-export default function DashboardPage() {
-  // --- ESTADOS (O seu código, sem mudanças) ---
-  const [query, setQuery] = useState(''); 
-  const [isSearchLoading, setIsSearchLoading] = useState(false);
-  const [results, setResults] = useState<GameSearchResult[]>([]);
-  const [selectedGame, setSelectedGame] = useState<GameDetails | null>(null);
-  const [isDetailsLoading, setIsDetailsLoading] = useState(false);
+// --- PÁGINA DE AVALIAÇÃO DO JOGO ---
+export default function GameReviewPage() {
+  const router = useRouter();
+  const params = useParams();
+  const { id } = params;
+
+  const [game, setGame] = useState<GameDetails | null>(null);
   const [review, setReview] = useState<ReviewForm>(defaultReviewState);
+  const [averageScore, setAverageScore] = useState<number | null>(5.0);
   const [reviewStatus, setReviewStatus] = useState(''); 
-  const [averageScore, setAverageScore] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // --- LÓGICA (O seu código, sem mudanças) ---
+  // Mapeamento dos keys para icones/labels (exatamente como no design)
+  const reviewLabels: { [key in keyof ReviewForm]: { label: string; icon: JSX.Element } } = {
+    jogabilidade: { 
+      label: 'JOGABILIDADE', 
+      icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1 1 21.75 8.25Z" /></svg>
+    },
+    graficos: { 
+      label: 'GRÁFICOS', 
+      icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75L12 15.75m0 0l-1.5 6m1.5-6l1.5 6M20.25 15.75L12 15.75m0 0l1.5 6m-1.5-6l-1.5 6M12 9.75a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M22.5 10.5l-2.25-2.25M2.25 10.5L4.5 8.25m8.25 12l2.25 2.25m-8.25-2.25L9.75 22.5M7.5 15.75a4.5 4.5 0 0 0 1.257 3.375C10.507 20.73 12 22.5 12 22.5s1.493-1.77 3.243-3.375a4.5 4.5 0 0 0 1.257-3.375V15.75L12 9.75l-4.5 6z" /></svg>
+    },
+    narrativa: { 
+      label: 'NARRATIVA', 
+      icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0112 20.25c.834 0 1.65-.147 2.416-.413l.002-.001 2.597-1.049A3.375 3.375 0 0016.5 16.25c0-.649-.182-1.24-.492-1.748L12 10.042" /><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.398a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75c0-1.216.455-2.356 1.22-3.22A4.486 4.486 0 0112 15c2.149 0 4.198.844 5.773 2.373" /></svg>
+    },
+    audio: { 
+      label: 'ÁUDIO', 
+      icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728m-1.75-2.1a5.25 5.25 0 0 0 0-7.538M9.375 4.5V19.5m0-4.5H1.5M9.375 9L1.5 4.5v15L9.375 15m10.5-11.25h.008v.008h-.008V2.25zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0z" /></svg>
+    },
+    desempenho: { 
+      label: 'DESEMPENHO', 
+      icon: <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L13.5 21.75 15 13.5H3.75z" /></svg>
+    },
+  };
+
   useEffect(() => {
-    if (!selectedGame) return; 
+    if (!id) return;
 
-    const fetchReview = async () => {
-      setReviewStatus('Carregando seu review...');
+    const loadGameData = async () => {
+      setIsLoading(true);
+      
       try {
-        const res = await fetch(`/api/review?game_id=${selectedGame.id}&owner_id=1`);
-        const data = await res.json();
+        const gameRes = await fetch(`/api/game/${id}`);
+        const gameData = await gameRes.json();
+        if (gameData && gameData.name) {
+          setGame(gameData);
+        } else {
+          setReviewStatus('Erro: Jogo não encontrado.');
+        }
+      } catch (err) {
+        setReviewStatus('Erro ao carregar dados do jogo.');
+      }
+
+      try {
+        const reviewRes = await fetch(`/api/review?game_id=${id}&owner_id=1`);
+        const reviewData = await reviewRes.json();
         
-        if (data.error) {
+        if (reviewData.error) {
           setReview(defaultReviewState);
           setAverageScore(5.0); 
           setReviewStatus('Seja o primeiro a avaliar!');
         } else {
           setReview({
-            jogabilidade: data.jogabilidade,
-            graficos: data.graficos,
-            narrativa: data.narrativa,
-            audio: data.audio,
-            desempenho: data.desempenho,
+            jogabilidade: reviewData.jogabilidade,
+            graficos: reviewData.graficos,
+            narrativa: reviewData.narrativa,
+            audio: reviewData.audio,
+            desempenho: reviewData.desempenho,
           });
-          setAverageScore(data.nota_geral);
-          setReviewStatus('Review carregada do seu perfil.');
+          setAverageScore(reviewData.nota_geral);
+          setReviewStatus('Review carregada.');
         }
       } catch (err) {
-        setReviewStatus('Erro ao carregar review.');
+        setReviewStatus('Erro ao carregar review salvo.');
       }
+      
+      setIsLoading(false);
     };
-    fetchReview();
-  }, [selectedGame]); 
 
-  
-  const handleSearchWrapper = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); 
-    handleSearch();     
-  };
+    loadGameData();
+  }, [id]);
 
-  const handleSearch = async () => {
-    if (!query) return; 
-    setIsSearchLoading(true);
-    setResults([]); 
-    setSelectedGame(null); 
-    
-    try {
-      const response = await fetch(`/api/search?q=${query}`);
-      const data = await response.json();
-      if (Array.isArray(data)) {
-        setResults(data);
-      } else {
-        console.error("A API não retornou um array:", data);
-      }
-    } catch (error) {
-      console.error("Erro ao buscar dados da API:", error);
-    }
-    setIsSearchLoading(false); 
-  };
-
-  const handleGameClick = async (gameId: number) => {
-    setIsDetailsLoading(true);
-    setResults([]); 
-    setReviewStatus('');
-    setReview(defaultReviewState); 
-    setAverageScore(null); 
-    
-    try {
-      const res = await fetch(`/api/game/${gameId}`);
-      const data = await res.json();
-      if (data && data.name) {
-        setSelectedGame(data); 
-      }
-    } catch (error) {
-      console.error("Erro ao buscar detalhes do jogo:", error);
-    }
-    setIsDetailsLoading(false);
-  };
-
-  const handleBackToSearch = () => {
-    setSelectedGame(null);
-    setQuery(''); 
-  };
-  
   const handleReviewChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const updatedReview = { ...review, [name]: Number(value) };
@@ -242,13 +175,13 @@ export default function DashboardPage() {
   };
 
   const handleSubmitReview = async () => {
-    if (!selectedGame) return;
+    if (!game) return;
     setReviewStatus('Salvando...');
     
     const reviewData = { 
       ...review, 
-      game_id: selectedGame.id, 
-      game_name: selectedGame.name, 
+      game_id: game.id, 
+      game_name: game.name, 
       owner_id: 1 
     };
     
@@ -268,227 +201,137 @@ export default function DashboardPage() {
       setReviewStatus('Falha ao salvar review.');
     }
   };
+  
+  // Ecrã de Carregamento
+  if (isLoading || !game) {
+    return (
+      <main className="min-h-screen bg-[#1E2024] text-white flex items-center justify-center">
+        <p className="font-pixel text-2xl">Carregando Jogo...</p>
+      </main>
+    );
+  }
 
+  // Ecrã Principal (AGORA IDÊNTICO AO SEU DESIGN)
   return (
-    // Divisão #1 (Área da Pesquisa)
-    <main className="min-h-screen bg-[#1E2024] text-white">
+    // Fundo preto e padding lateral
+    <main className="min-h-screen bg-[#1E2024] text-white p-6 md:p-12 font-sans">
       
-      <DashboardHeader />
-      
-      <div className={`w-full bg-[#1E2024] border-b border-gray-700 ${selectedGame ? 'hidden' : ''}`}>
-        <div className="mx-auto max-w-8xl px-4 pt-10 pb-10 sm:px-6 lg:px-10">
-          <div className="flex items-center gap-0">
-            
-            <button className="
-              p-2 rounded-md text-lime-green
-              hover:bg-lime-green/10 transition-colors
-            ">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-              </svg>
-            </button>
-            
-            <form className="flex-grow max-w-lg mx-auto" onSubmit={handleSearchWrapper}>
-              <div className="relative">
-                <input 
-                  type="text" 
-                  value={query} 
-                  onChange={(e) => setQuery(e.target.value)} 
-                  placeholder="PESQUISAR JOGOS..." 
-                  className="
-                    w-full rounded-full border border-gray-700
-                    bg-[#2A2D32] px-6 py-3 
-                    font-pixel tracking-wider text-white placeholder-gray-500
-                    focus:border-lime-400 focus:outline-none focus:ring-1 focus:ring-lime-400"
-                />
-                <button 
-                  type="submit"
-                  className="absolute right-2 top-1/2 -translate-y-1/2
-                    rounded-full bg-lime-400 p-2.5
-                    text-black transition-all hover:bg-lime-300"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                  </svg>
-                </button>
-              </div>
-            </form>
+      {/* Container que imita o "quadro" verde no seu design */}
+      <div className="relative border border-lime-400 p-4 md:p-8 lg:p-12 rounded-lg 
+                      max-w-[1200px] mx-auto bg-[#1a1c1f] shadow-lg">
+        
+        {/* Detalhes do jogo (Título e Descrição) */}
+        <div className="flex flex-col md:flex-row gap-8 mb-8">
+          <div className="md:w-1/2">
+            <h1 className="text-4xl lg:text-5xl font-pixel text-lime-400 tracking-wider mb-4">
+              {game.name.toUpperCase()}
+            </h1>
+            <p className="text-gray-300 text-sm max-h-48 overflow-y-auto pr-2">
+              <span className="font-pixel text-lime-400 text-base block mb-2">DESCRIPTION</span>
+              {game.deck}
+            </p>
+          </div>
+          
+          {/* Imagem do jogo */}
+          <div className="md:w-1/2 flex justify-center items-center">
+            <Image 
+              src={game.image.medium_url} 
+              alt={game.name} 
+              width={600}
+              height={350}
+              className="w-full h-auto object-cover rounded-lg border border-gray-700" 
+            />
           </div>
         </div>
-      </div>
-      
-      {/* Divisão #2 (Jogos) - Fundo Escuro */}
-      <div className="w-full bg-gray-900">
-        <div className="mx-auto max-w-6xl px-4 pt-0 pb-20 sm:px-6 lg:px-8">
-          
-          <div className="h-px bg-gray-600/50 my-10 border-none"></div>
 
-          {/* SE O JOGO NÃO ESTIVER SELECIONADO, MOSTRAR A BUSCA */}
-          {!selectedGame && (
-            <section>
-              <h2 className="mb-6 text-3xl font-bold text-white font-pixel tracking-wider">
-                {results.length > 0 ? 'RESULTADOS DA BUSCA' : 'JOGOS RELEVANTES'}
-              </h2>
-              
-              <div className="grid grid-cols-4 gap-8 md:grid-cols-4">
+        {/* Linha divisória */}
+        <div className="h-px bg-gray-700 my-8"></div>
+
+        {/* SECÇÃO DE REVIEW (OS GRÁFICOS) */}
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-10">
+          
+          {/* COLUNA ESQUERDA: MINI GRÁFICOS E SLIDERS (NOVO LAYOUT) */}
+          <div className="w-full lg:w-1/2 grid grid-cols-2 gap-x-8 gap-y-6">
+            {(Object.keys(review) as Array<keyof ReviewForm>).map((key) => (
+              <div key={key} className="relative flex items-center justify-center">
                 
-                {isSearchLoading && (
-                  <p className="col-span-4 text-center font-sans">Buscando...</p>
-                )}
-
-                {/* RESULTADOS DA API */}
-                {!isSearchLoading && results.length > 0 && (
-                  results.map((game) => (
-                    <div 
-                      key={game.id} 
-                      onClick={() => handleGameClick(game.id)}
-                      className="
-                        cursor-pointer rounded-xl bg-[#2A2D32] shadow-lg 
-                        border border-gray-700/50
-                        transition-all duration-300 hover:border-lime-400/50 hover:scale-105
-                      "
-                    >
-                      <div className="aspect-[4/3] w-full rounded-t-xl bg-[#393D44] flex items-center justify-center overflow-hidden">
-                        {game.image && (game.image.medium_url || game.image.thumb_url) ? (
-                          <Image
-                            src={game.image.medium_url || game.image.thumb_url!}
-                            alt={game.name}
-                            width={300}
-                            height={225}
-                            className="w-full h-full object-cover rounded-t-xl"
-                          />
-                        ) : (
-                          <svg className="w-10 h-10 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l-1.586-1.586a2 2 0 00-2.828 0L6 18m6 6H6a2 2 0 01-2-2V6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2z" /></svg>
-                        )}
-                      </div>
-                      <h3 className="p-3 font-sans text-sm font-semibold text-white truncate">
-                        {game.name}
-                      </h3>
-                    </div>
-                  ))
-                )}
-
-                {/* Placeholders (Se não houver busca) */}
-                {!isSearchLoading && results.length === 0 && (
-                  [...Array(8)].map((_, i) => (
-                    <div 
-                      key={i} 
-                      className="
-                        cursor-pointer rounded-xl bg-[#2A2D32] shadow-lg 
-                        border border-gray-700/50
-                        transition-all duration-300 hover:border-lime-400/50 hover:scale-105
-                      "
-                    >
-                      <div className="aspect-[4/3] w-full rounded-t-xl bg-[#393D44] flex items-center justify-center">
-                      </div>
-                      <h3 className="p-3 font-sans text-sm font-semibold text-white truncate">
-                        Dragon&apos;s Crest: Age of Valor
-                      </h3>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
-          )}
-
-          {/* SE O JOGO ESTIVER A CARREGAR */}
-          {isDetailsLoading && <p className="text-center text-lg text-white">Carregando jogo...</p>}
-          
-          {/* --- MUDANÇA #1: O NOVO VISUAL DA ABA DE AVALIAÇÃO COMEÇA AQUI --- */}
-          {selectedGame && !isDetailsLoading && (
-            <section className="rounded-xl bg-[#2A2D32] p-6 shadow-lg border border-gray-700/50">
-              
-              <button 
-                onClick={handleBackToSearch} 
-                className="mb-4 rounded-md bg-gray-600 px-4 py-2 text-sm text-white transition-all hover:bg-gray-500 font-sans"
-              >
-                &larr; Voltar para a Busca
-              </button>
-              
-              <div className="flex flex-col gap-8 md:flex-row">
-                <Image 
-                  src={selectedGame.image.medium_url} 
-                  alt={selectedGame.name} 
-                  width={500}
-                  height={600}
-                  className="w-full rounded-lg md:w-1/2 lg:w-1/3 object-cover" 
+                {/* O GRÁFICO CIRCULAR INDIVIDUAL */}
+                <CircularProgress 
+                  value={review[key]} 
+                  max={10} 
+                  size={100} 
+                  strokeWidth={10} 
+                  color="#84CC16" 
                 />
                 
-                <div className="flex-1">
-                  <h2 className="mb-2 text-3xl font-bold text-white font-pixel">{selectedGame.name}</h2>
-                  <p className="mb-4 text-sm text-gray-400 font-sans max-h-40 overflow-y-auto">
-                    {selectedGame.deck}
-                  </p>
-                  
-                  {/* Caixa de Review (Novo Layout) */}
-                  <div className="rounded-lg bg-gray-900 border border-gray-700 p-6">
-                    <h3 className="text-2xl font-semibold text-white font-pixel mb-4">Meu Review</h3>
-                    
-                    <div className="flex flex-col md:flex-row gap-6">
-                      
-                      {/* Coluna Esquerda: 5 Gráficos Pequenos + 5 Sliders */}
-                      <div className="flex-1 space-y-4">
-                        
-                        {/* Os 5 gráficos em grelha */}
-                        <div className="grid grid-cols-3 gap-4">
-                          {(Object.keys(review) as Array<keyof ReviewForm>).map((key) => (
-                            <div key={key} className="flex flex-col items-center">
-                              <CircularProgress value={review[key]} size="small" />
-                              <label className="mt-2 text-xs capitalize text-gray-300 font-sans">
-                                {key}
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                        
-                        <hr className="my-4 border-gray-700"/>
-                        
-                        {/* Os 5 sliders (agora separados) */}
-                        <div className="space-y-3">
-                          {(Object.keys(review) as Array<keyof ReviewForm>).map((key) => (
-                             <div key={key}>
-                               <label className="mb-1 block text-sm capitalize text-gray-300 font-sans">
-                                 {key}: <span className="font-bold text-white">{review[key]}</span>
-                               </label>
-                               <input
-                                 type="range" name={key} min="0" max="10" step="0.5"
-                                 value={review[key]} 
-                                 onChange={handleReviewChange}
-                                 className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-lime-400"
-                               />
-                             </div>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      {/* Coluna Direita: Gráfico Grande (Média) */}
-                      <div className="flex flex-col items-center justify-center p-4">
-                        <h4 className="text-lg font-pixel text-white mb-2">Média Geral</h4>
-                        {averageScore !== null && (
-                           <CircularProgress value={averageScore} size="large" />
-                        )}
-                      </div>
-                      
-                    </div>
-                    
-                    {/* Botão Salvar (agora fora das colunas) */}
-                    <button 
-                      onClick={handleSubmitReview}
-                      className="mt-6 w-full rounded-md bg-lime-400 px-6 py-3 font-bold text-black transition-all hover:bg-lime-300 font-pixel text-lg"
-                    >
-                      Salvar Review
-                    </button>
-                    <p className={`mt-3 text-center text-sm font-sans ${reviewStatus.includes('Erro') ? 'text-red-400' : 'text-lime-400'}`}>
-                      {reviewStatus}
-                    </p>
-                  </div>
+                {/* Input Slider INVISÍVEL por cima do círculo */}
+                <input
+                  type="range" 
+                  name={key} 
+                  min="0" 
+                  max="10" 
+                  step="0.5"
+                  value={review[key]} 
+                  onChange={handleReviewChange}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" // Z-index para ser clicável
+                />
+
+                {/* ÍCONE e LABEL (centralizados no círculo) */}
+                <div className="absolute flex flex-col items-center justify-center text-gray-300 pointer-events-none"> {/* pointer-events-none para não bloquear o input */}
+                  {reviewLabels[key].icon}
+                  <span className="text-xs font-pixel mt-1 text-lime-300">{review[key]}</span> {/* Mostra o valor */}
                 </div>
+
+                {/* Label abaixo do círculo */}
+                <span className="absolute -bottom-8 text-sm font-pixel text-gray-400">
+                  {reviewLabels[key].label}
+                </span>
               </div>
-            </section>
-          )}
-          {/* --- FIM DA MUDANÇA --- */}
+            ))}
+          </div>
+
+          {/* COLUNA DIREITA: GRÁFICO GERAL MAIOR E NOTA FINAL */}
+          <div className="w-full lg:w-1/2 flex flex-col items-center justify-center mt-10 lg:mt-0">
+            <div className="relative flex items-center justify-center mb-8">
+              <CircularProgress 
+                value={averageScore || 0} 
+                max={10} 
+                size={200} // Tamanho maior para o gráfico geral
+                strokeWidth={15} // Mais grosso
+                color="#84CC16" 
+              />
+              <div className="absolute flex flex-col items-center justify-center">
+                <span className="text-7xl font-pixel text-lime-400">
+                  {averageScore !== null ? averageScore.toFixed(1) : 'N/A'}
+                </span>
+                <span className="text-lg font-pixel text-gray-400 mt-2">
+                  AVERAGE RATING
+                </span>
+              </div>
+            </div>
+            
+            {/* Botão Salvar Review */}
+            <button 
+              onClick={handleSubmitReview}
+              className="mt-6 w-full max-w-xs rounded-md bg-lime-400 px-6 py-3 font-bold text-black transition-all hover:bg-lime-300 font-pixel text-lg"
+            >
+              SALVAR REVIEW
+            </button>
+            <p className={`mt-3 text-center text-sm font-sans ${reviewStatus.includes('Erro') ? 'text-red-400' : 'text-lime-400'}`}>
+              {reviewStatus}
+            </p>
+          </div>
 
         </div>
+
+        {/* Botão Voltar (na parte inferior, alinhado com o design) */}
+        <button 
+          onClick={() => router.push('/dashboard')} 
+          className="absolute bottom-4 left-4 rounded-md bg-gray-800 px-4 py-2 text-sm text-gray-300 transition-all hover:bg-gray-700 font-pixel"
+        >
+          &larr; VOLTAR
+        </button>
+
       </div>
     </main>
   );
