@@ -15,8 +15,5 @@
       "source": "/api/(.*)",
       "destination": "/api/index.py"
     }
-    
-    // A regra "source": "/(.*)" FOI REMOVIDA.
-    // O Next.js vai gerir o resto automaticamente.
   ]
 }
