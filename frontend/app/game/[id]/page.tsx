@@ -1,11 +1,11 @@
 // Caminho do arquivo: frontend/app/game/[id]/page.tsx
 'use client';
 
-import { useState, useEffect, useRef } from 'react'; // Adicionado useRef para animações
+import { useState, useEffect } from 'react'; // useRef foi removido
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 
-// --- TIPOS ---
+// --- TIPOS (Sem mudanças) ---
 type GameDetails = {
   id: number; 
   name: string;
@@ -29,15 +29,14 @@ const defaultReviewState = {
   desempenho: 5,
 };
 
-// --- COMPONENTE DO GRÁFICO CIRCULAR (SVG) ---
-// Este componente cria um círculo preenchido com base num valor
+// --- COMPONENTE DO GRÁFICO CIRCULAR (SVG) (Sem mudanças) ---
 function CircularProgress({ value, max, size = 60, strokeWidth = 8, color = '#84CC16', label }: {
   value: number;
   max: number;
   size?: number;
   strokeWidth?: number;
   color?: string;
-  label?: string; // Novo para os rótulos de texto
+  label?: string;
 }) {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
@@ -46,16 +45,14 @@ function CircularProgress({ value, max, size = 60, strokeWidth = 8, color = '#84
   return (
     <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
       <svg className="transform -rotate-90" width={size} height={size}>
-        {/* Círculo de fundo */}
         <circle
-          stroke="#4B5563" // Cor do fundo da barra
+          stroke="#4B5563" 
           fill="transparent"
           strokeWidth={strokeWidth}
           r={radius}
           cx={size / 2}
           cy={size / 2}
         />
-        {/* Círculo de progresso */}
         <circle
           stroke={color}
           fill="transparent"
@@ -66,14 +63,13 @@ function CircularProgress({ value, max, size = 60, strokeWidth = 8, color = '#84
           style={{
             strokeDasharray: circumference,
             strokeDashoffset: offset,
-            transition: 'stroke-dashoffset 0.35s ease-out', // Animação suave
+            transition: 'stroke-dashoffset 0.35s ease-out', 
           }}
-          strokeLinecap="round" // Pontas arredondadas
+          strokeLinecap="round"
         />
       </svg>
       {label && (
-        <span className="absolute text-white text-xs font-pixel -mt-2"> {/* Ajuste para centralizar o ícone/label */}
-            {/* Aqui pode ser um ícone ou o label do texto */}
+        <span className="absolute text-white text-xs font-pixel -mt-2">
         </span>
       )}
     </div>
@@ -93,7 +89,7 @@ export default function GameReviewPage() {
   const [reviewStatus, setReviewStatus] = useState(''); 
   const [isLoading, setIsLoading] = useState(true);
 
-  // Mapeamento dos keys para icones/labels (exatamente como no design)
+  // Mapeamento dos keys para icones/labels (Sem mudanças)
   const reviewLabels: { [key in keyof ReviewForm]: { label: string; icon: JSX.Element } } = {
     jogabilidade: { 
       label: 'JOGABILIDADE', 
@@ -117,12 +113,11 @@ export default function GameReviewPage() {
     },
   };
 
+  // Lógica de carregar dados (Sem mudanças)
   useEffect(() => {
     if (!id) return;
-
     const loadGameData = async () => {
       setIsLoading(true);
-      
       try {
         const gameRes = await fetch(`/api/game/${id}`);
         const gameData = await gameRes.json();
@@ -134,11 +129,9 @@ export default function GameReviewPage() {
       } catch (err) {
         setReviewStatus('Erro ao carregar dados do jogo.');
       }
-
       try {
         const reviewRes = await fetch(`/api/review?game_id=${id}&owner_id=1`);
         const reviewData = await reviewRes.json();
-        
         if (reviewData.error) {
           setReview(defaultReviewState);
           setAverageScore(5.0); 
@@ -157,34 +150,29 @@ export default function GameReviewPage() {
       } catch (err) {
         setReviewStatus('Erro ao carregar review salvo.');
       }
-      
       setIsLoading(false);
     };
-
     loadGameData();
   }, [id]);
 
+  // Lógica de review (Sem mudanças)
   const handleReviewChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const updatedReview = { ...review, [name]: Number(value) };
     setReview(updatedReview);
-    
     const scores = Object.values(updatedReview);
     const newAverage = scores.reduce((a, b) => a + b, 0) / scores.length;
     setAverageScore(newAverage);
   };
-
   const handleSubmitReview = async () => {
     if (!game) return;
     setReviewStatus('Salvando...');
-    
     const reviewData = { 
       ...review, 
       game_id: game.id, 
       game_name: game.name, 
       owner_id: 1 
     };
-    
     try {
       const response = await fetch('/api/review', {
         method: 'POST',
@@ -202,25 +190,25 @@ export default function GameReviewPage() {
     }
   };
   
-  // Ecrã de Carregamento
+  // Ecrã de Carregamento (Sem mudanças)
   if (isLoading || !game) {
     return (
-      <main className="min-h-screen bg-[#1E2024] text-white flex items-center justify-center">
+      <main className="min-h-screen bg-black text-white flex items-center justify-center">
         <p className="font-pixel text-2xl">Carregando Jogo...</p>
       </main>
     );
   }
 
-  // Ecrã Principal (AGORA IDÊNTICO AO SEU DESIGN)
+  // --- MUDANÇA #1: FUNDO TOTALMENTE PRETO ---
   return (
-    // Fundo preto e padding lateral
-    <main className="min-h-screen bg-[#1E2024] text-white p-6 md:p-12 font-sans">
+    <main className="min-h-screen bg-black text-white p-6 md:p-12 font-sans">
       
-      {/* Container que imita o "quadro" verde no seu design */}
+      {/* --- MUDANÇA #2: "BALÃO" MENOR --- */}
+      {/* Mudei max-w-[1200px] (6xl) para max-w-5xl (1024px) */}
       <div className="relative border border-lime-400 p-4 md:p-8 lg:p-12 rounded-lg 
-                      max-w-[1200px] mx-auto bg-[#1a1c1f] shadow-lg">
+                      max-w-5xl mx-auto bg-[#1a1c1f] shadow-lg">
         
-        {/* Detalhes do jogo (Título e Descrição) */}
+        {/* Detalhes do jogo (Sem mudanças) */}
         <div className="flex flex-col md:flex-row gap-8 mb-8">
           <div className="md:w-1/2">
             <h1 className="text-4xl lg:text-5xl font-pixel text-lime-400 tracking-wider mb-4">
@@ -232,7 +220,6 @@ export default function GameReviewPage() {
             </p>
           </div>
           
-          {/* Imagem do jogo */}
           <div className="md:w-1/2 flex justify-center items-center">
             <Image 
               src={game.image.medium_url} 
@@ -244,27 +231,34 @@ export default function GameReviewPage() {
           </div>
         </div>
 
-        {/* Linha divisória */}
         <div className="h-px bg-gray-700 my-8"></div>
 
         {/* SECÇÃO DE REVIEW (OS GRÁFICOS) */}
         <div className="flex flex-col lg:flex-row items-center justify-between gap-10">
           
-          {/* COLUNA ESQUERDA: MINI GRÁFICOS E SLIDERS (NOVO LAYOUT) */}
-          <div className="w-full lg:w-1/2 grid grid-cols-2 gap-x-8 gap-y-6">
+          {/* --- MUDANÇA #3: GRÁFICOS CORRIGIDOS --- */}
+          <div className="w-full lg:w-1/2 grid grid-cols-2 gap-x-8 gap-y-10">
             {(Object.keys(review) as Array<keyof ReviewForm>).map((key) => (
-              <div key={key} className="relative flex items-center justify-center">
+              
+              // O container agora é 'flex-col' para o slider ficar em baixo
+              <div key={key} className="flex flex-col items-center gap-3">
                 
-                {/* O GRÁFICO CIRCULAR INDIVIDUAL */}
-                <CircularProgress 
-                  value={review[key]} 
-                  max={10} 
-                  size={100} 
-                  strokeWidth={10} 
-                  color="#84CC16" 
-                />
+                {/* 1. O GRÁFICO (com ícone e valor) */}
+                <div className="relative flex items-center justify-center" style={{ width: 100, height: 100 }}>
+                  <CircularProgress 
+                    value={review[key]} 
+                    max={10} 
+                    size={100} 
+                    strokeWidth={10} 
+                    color="#84CC16" 
+                  />
+                  <div className="absolute flex flex-col items-center justify-center text-gray-300 pointer-events-none">
+                    {reviewLabels[key].icon}
+                    <span className="text-xs font-pixel mt-1 text-lime-300">{review[key]}</span>
+                  </div>
+                </div>
                 
-                {/* Input Slider INVISÍVEL por cima do círculo */}
+                {/* 2. O SLIDER (VISÍVEL) */}
                 <input
                   type="range" 
                   name={key} 
@@ -273,31 +267,26 @@ export default function GameReviewPage() {
                   step="0.5"
                   value={review[key]} 
                   onChange={handleReviewChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" // Z-index para ser clicável
+                  // O slider visível, verde, como o antigo
+                  className="w-full h-2 accent-lime-400 cursor-pointer"
                 />
 
-                {/* ÍCONE e LABEL (centralizados no círculo) */}
-                <div className="absolute flex flex-col items-center justify-center text-gray-300 pointer-events-none"> {/* pointer-events-none para não bloquear o input */}
-                  {reviewLabels[key].icon}
-                  <span className="text-xs font-pixel mt-1 text-lime-300">{review[key]}</span> {/* Mostra o valor */}
-                </div>
-
-                {/* Label abaixo do círculo */}
-                <span className="absolute -bottom-8 text-sm font-pixel text-gray-400">
+                {/* 3. O LABEL (embaixo) */}
+                <span className="text-sm font-pixel text-gray-400">
                   {reviewLabels[key].label}
                 </span>
               </div>
             ))}
           </div>
 
-          {/* COLUNA DIREITA: GRÁFICO GERAL MAIOR E NOTA FINAL */}
+          {/* COLUNA DIREITA: GRÁFICO GERAL (Sem mudanças) */}
           <div className="w-full lg:w-1/2 flex flex-col items-center justify-center mt-10 lg:mt-0">
             <div className="relative flex items-center justify-center mb-8">
               <CircularProgress 
                 value={averageScore || 0} 
                 max={10} 
-                size={200} // Tamanho maior para o gráfico geral
-                strokeWidth={15} // Mais grosso
+                size={200} 
+                strokeWidth={15}
                 color="#84CC16" 
               />
               <div className="absolute flex flex-col items-center justify-center">
@@ -310,7 +299,6 @@ export default function GameReviewPage() {
               </div>
             </div>
             
-            {/* Botão Salvar Review */}
             <button 
               onClick={handleSubmitReview}
               className="mt-6 w-full max-w-xs rounded-md bg-lime-400 px-6 py-3 font-bold text-black transition-all hover:bg-lime-300 font-pixel text-lg"
@@ -324,7 +312,7 @@ export default function GameReviewPage() {
 
         </div>
 
-        {/* Botão Voltar (na parte inferior, alinhado com o design) */}
+        {/* Botão Voltar (Sem mudanças) */}
         <button 
           onClick={() => router.push('/dashboard')} 
           className="absolute bottom-4 left-4 rounded-md bg-gray-800 px-4 py-2 text-sm text-gray-300 transition-all hover:bg-gray-700 font-pixel"
