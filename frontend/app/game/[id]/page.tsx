@@ -1,11 +1,11 @@
 // Caminho do arquivo: frontend/app/game/[id]/page.tsx
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 
-// --- TIPOS (O seu código, sem mudanças) ---
+// --- TIPOS ---
 type GameDetails = {
   id: number; 
   name: string;
@@ -29,8 +29,9 @@ const defaultReviewState = {
   desempenho: 5,
 };
 
-// --- COMPONENTE DO GRÁFICO CIRCULAR (O seu código, sem mudanças) ---
-function CircularProgress({ value, max, size = 60, strokeWidth = 8, color = '#84CC16', label }: {
+// --- COMPONENTE DO GRÁFICO CIRCULAR ---
+// Alterado default color para verde forte (#16a34a - tailwind green-600)
+function CircularProgress({ value, max, size = 60, strokeWidth = 8, color = '#16a34a', label }: {
   value: number;
   max: number;
   size?: number;
@@ -72,7 +73,7 @@ function CircularProgress({ value, max, size = 60, strokeWidth = 8, color = '#84
       </svg>
       {label && (
         <span className="absolute text-white text-xs font-pixel -mt-2">
-            {/* Aqui pode ser um ícone ou o label do texto */}
+            {/* Label opcional */}
         </span>
       )}
     </div>
@@ -80,7 +81,7 @@ function CircularProgress({ value, max, size = 60, strokeWidth = 8, color = '#84
 }
 
 
-// --- PÁGINA DE AVALIAÇÃO DO JOGO (O seu código, sem mudanças) ---
+// --- PÁGINA DE AVALIAÇÃO DO JOGO ---
 export default function GameReviewPage() {
   const router = useRouter();
   const params = useParams();
@@ -199,33 +200,32 @@ export default function GameReviewPage() {
     );
   }
 
-  // --- MUDANÇA #1: FUNDO PARA IMAGEM (bg-black) ---
   return (
     <main className="relative min-h-screen text-white p-6 md:p-12 font-sans">
       
-      {/* Imagem de Fundo (rate-bg.jpg) */}
+      {/* Imagem de Fundo */}
       <Image
-        src="/images/rate-bg.jpg" // A sua nova imagem
+        src="/images/rate-bg.jpg"
         alt="Fundo da página de avaliação"
         layout="fill"
-        className="object-cover z-0 opacity-30" // Opacidade para legibilidade
+        className="object-cover z-0 opacity-30"
       />
       
-      {/* --- MUDANÇA #2: CONTEÚDO EM 'relative z-10' --- */}
       <div className="relative z-10"> 
       
-        {/* Container (O seu balão 'max-w-5xl') */}
-        <div className="relative border border-lime-400 p-4 md:p-8 lg:p-12 rounded-lg 
+        {/* Container - MUDANÇA: Border Lime -> Green-600 */}
+        <div className="relative border border-green-600 p-4 md:p-8 lg:p-12 rounded-lg 
                         max-w-5xl mx-auto bg-[#1a1c1f] shadow-lg">
           
-          {/* Detalhes do jogo (Sem mudanças) */}
           <div className="flex flex-col md:flex-row gap-8 mb-8">
             <div className="md:w-1/2">
-              <h1 className="text-4xl lg:text-5xl font-pixel text-lime-400 tracking-wider mb-4">
+              {/* Título - MUDANÇA: Text Lime -> Green-500 */}
+              <h1 className="text-4xl lg:text-5xl font-pixel text-green-500 tracking-wider mb-4">
                 {game.name.toUpperCase()}
               </h1>
               <p className="text-gray-300 text-sm max-h-48 overflow-y-auto pr-2">
-                <span className="font-pixel text-lime-400 text-base block mb-2">DESCRIPTION</span>
+                {/* Label Description - MUDANÇA: Text Lime -> Green-500 */}
+                <span className="font-pixel text-green-500 text-base block mb-2">DESCRIPTION</span>
                 {game.deck}
               </p>
             </div>
@@ -243,29 +243,31 @@ export default function GameReviewPage() {
 
           <div className="h-px bg-gray-700 my-8"></div>
 
-          {/* SECÇÃO DE REVIEW (OS GRÁFICOS) */}
+          {/* SECÇÃO DE REVIEW */}
           <div className="flex flex-col lg:flex-row items-center justify-between gap-10">
             
-            {/* --- MUDANÇA #3: GRÁFICOS CORRIGIDOS (O seu código) --- */}
             <div className="w-full lg:w-1/2 grid grid-cols-2 gap-x-8 gap-y-10">
               {(Object.keys(review) as Array<keyof ReviewForm>).map((key) => (
                 
                 <div key={key} className="flex flex-col items-center gap-3">
                   
                   <div className="relative flex items-center justify-center" style={{ width: 100, height: 100 }}>
+                    {/* Circular Progress - MUDANÇA: cor hex #16a34a (Green 600) */}
                     <CircularProgress 
                       value={review[key]} 
                       max={10} 
                       size={100} 
                       strokeWidth={10} 
-                      color="#84CC16" 
+                      color="#16a34a" 
                     />
                     <div className="absolute flex flex-col items-center justify-center text-gray-300 pointer-events-none">
                       {reviewLabels[key].icon}
-                      <span className="text-xs font-pixel mt-1 text-lime-300">{review[key]}</span>
+                      {/* Texto pequeno dentro do circulo - MUDANÇA: Text Lime -> Green-400 */}
+                      <span className="text-xs font-pixel mt-1 text-green-400">{review[key]}</span>
                     </div>
                   </div>
                   
+                  {/* Input Range - MUDANÇA: Accent Lime -> Green-600 */}
                   <input
                     type="range" 
                     name={key} 
@@ -274,7 +276,7 @@ export default function GameReviewPage() {
                     step="0.5"
                     value={review[key]} 
                     onChange={handleReviewChange}
-                    className="w-full h-2 accent-lime-400 cursor-pointer"
+                    className="w-full h-2 accent-green-600 cursor-pointer"
                   />
 
                   <span className="text-sm font-pixel text-gray-400">
@@ -284,18 +286,20 @@ export default function GameReviewPage() {
               ))}
             </div>
 
-            {/* COLUNA DIREITA: GRÁFICO GERAL (Sem mudanças) */}
+            {/* COLUNA DIREITA: GRÁFICO GERAL */}
             <div className="w-full lg:w-1/2 flex flex-col items-center justify-center mt-10 lg:mt-0">
               <div className="relative flex items-center justify-center mb-8">
+                {/* Circular Progress Grande - MUDANÇA: cor hex #16a34a */}
                 <CircularProgress 
                   value={averageScore || 0} 
                   max={10} 
                   size={200} 
                   strokeWidth={15}
-                  color="#84CC16" 
+                  color="#16a34a" 
                 />
                 <div className="absolute flex flex-col items-center justify-center">
-                  <span className="text-7xl font-pixel text-lime-400">
+                  {/* Nota Grande - MUDANÇA: Text Lime -> Green-500 */}
+                  <span className="text-7xl font-pixel text-green-500">
                     {averageScore !== null ? averageScore.toFixed(1) : 'N/A'}
                   </span>
                   <span className="text-lg font-pixel text-gray-400 mt-2">
@@ -304,20 +308,21 @@ export default function GameReviewPage() {
                 </div>
               </div>
               
+              {/* Botão Salvar - MUDANÇA: BG e Hover mudados para tons de verde puro */}
               <button 
                 onClick={handleSubmitReview}
-                className="mt-6 w-full max-w-xs rounded-md bg-lime-400 px-6 py-3 font-bold text-black transition-all hover:bg-lime-300 font-pixel text-lg"
+                className="mt-6 w-full max-w-xs rounded-md bg-green-600 px-6 py-3 font-bold text-white transition-all hover:bg-green-500 font-pixel text-lg"
               >
                 SALVAR REVIEW
               </button>
-              <p className={`mt-3 text-center text-sm font-sans ${reviewStatus.includes('Erro') ? 'text-red-400' : 'text-lime-400'}`}>
+              {/* Texto de Status - MUDANÇA: Text Lime -> Text Green */}
+              <p className={`mt-3 text-center text-sm font-sans ${reviewStatus.includes('Erro') ? 'text-red-400' : 'text-green-500'}`}>
                 {reviewStatus}
               </p>
             </div>
 
           </div>
 
-          {/* Botão Voltar (Sem mudanças) */}
           <button 
             onClick={() => router.push('/dashboard')} 
             className="absolute bottom-4 left-4 rounded-md bg-gray-800 px-4 py-2 text-sm text-gray-300 transition-all hover:bg-gray-700 font-pixel"
@@ -327,7 +332,7 @@ export default function GameReviewPage() {
 
         </div>
         
-      </div> {/* --- FIM DO 'div' z-10 --- */}
+      </div>
     </main>
   );
 }
